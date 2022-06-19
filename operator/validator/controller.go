@@ -62,7 +62,7 @@ type ControllerOptions struct {
 	ForkVersion                forksprotocol.ForkVersion
 
 	// worker flags
-	WorkersCount    int
+	WorkersCount    int `yaml:"MsgWorkersCount" env:"MSG_WORKERS_COUNT" env-default:"1" env-description:"Number of goroutines to use for message workers"`
 	QueueBufferSize int
 }
 
@@ -157,6 +157,7 @@ func NewController(options ControllerOptions) Controller {
 		Logger:       options.Logger,
 		WorkersCount: options.WorkersCount,
 		Buffer:       options.QueueBufferSize,
+		MetricsPrefix: "workers",
 	}
 
 	validatorOptions := &validator.Options{

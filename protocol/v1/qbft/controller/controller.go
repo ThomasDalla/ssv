@@ -142,6 +142,21 @@ func New(opts Options) IController {
 	return ctrl
 }
 
+// ReadAllDecided reads all decided messages of the validator
+func (c *Controller) ReadAllDecided() ([]*message.SignedMessage, error) {
+	highest, err := c.highestKnownDecided()
+	if err != nil {
+		c.logger.Warn("could not read highest decided")
+		return nil, errors.Wrap(err, "could not read highest decided")
+	}
+	if highest == nil {
+		c.logger.Debug("could not find highest decided")
+		return nil, nil
+	}
+	c.logger.Debug("found highest decided, reading messages", zap.Int64("height", int64(highest.Message.Height)))
+	return c.decidedStrategy.GetDecided(c.Identifier, message.Height(0), highest.Message.Height)
+}
+
 func (c *Controller) getCurrentInstance() instance.Instancer {
 	c.currentInstanceLock.RLock()
 	defer c.currentInstanceLock.RUnlock()

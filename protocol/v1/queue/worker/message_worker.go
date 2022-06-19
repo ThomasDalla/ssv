@@ -3,18 +3,35 @@ package worker
 import (
 	"context"
 	"github.com/bloxapp/ssv/protocol/v1/message"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
+	"log"
 )
+
+var (
+	metricsMsgProcessing = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "ssv:worker:msg:process",
+		Help: "Count decided messages",
+	}, []string{"name"})
+)
+
+func init() {
+	if err := prometheus.Register(metricsMsgProcessing); err != nil {
+		log.Println("could not register prometheus collector")
+	}
+}
 
 // workerHandler func that receive message.SSVMessage to handle
 type workerHandler func(msg *message.SSVMessage) error
 
 // Config holds all necessary config for worker
 type Config struct {
-	Ctx          context.Context
-	Logger       *zap.Logger
-	WorkersCount int
-	Buffer       int
+	Ctx           context.Context
+	Logger        *zap.Logger
+	WorkersCount  int
+	Buffer        int
+	MetricsPrefix string
 }
 
 // Worker listen to queue and process the messages
@@ -25,6 +42,8 @@ type Worker struct {
 	workersCount int
 	queue        chan *message.SSVMessage
 	handler      workerHandler
+
+	metricsPrefix string
 }
 
 // NewWorker return new Worker
@@ -33,11 +52,12 @@ func NewWorker(cfg *Config) *Worker {
 	logger := cfg.Logger.With(zap.String("who", "messageWorker"))
 
 	w := &Worker{
-		ctx:          ctx,
-		cancel:       cancel,
-		logger:       logger,
-		workersCount: cfg.WorkersCount,
-		queue:        make(chan *message.SSVMessage, cfg.Buffer),
+		ctx:           ctx,
+		cancel:        cancel,
+		logger:        logger,
+		workersCount:  cfg.WorkersCount,
+		queue:         make(chan *message.SSVMessage, cfg.Buffer),
+		metricsPrefix: cfg.MetricsPrefix,
 	}
 
 	w.init()
@@ -54,9 +74,11 @@ func (w *Worker) init() {
 
 // startWorker process functionality
 func (w *Worker) startWorker(ch <-chan *message.SSVMessage) {
+	ctx, cancel := context.WithCancel(w.ctx)
+	defer cancel()
 	for {
 		select {
-		case <-w.ctx.Done():
+		case <-ctx.Done():
 			return
 		case msg := <-ch:
 			w.process(msg)
@@ -87,6 +109,11 @@ func (w *Worker) Close() {
 	w.cancel()
 }
 
+// Size returns the queue size
+func (w *Worker) Size() int {
+	return len(w.queue)
+}
+
 // process the msg's from queue
 func (w *Worker) process(msg *message.SSVMessage) {
 	if w.handler == nil {
@@ -96,4 +123,5 @@ func (w *Worker) process(msg *message.SSVMessage) {
 	if err := w.handler(msg); err != nil {
 		w.logger.Warn("could not handle message", zap.Error(err))
 	}
+	metricsMsgProcessing.WithLabelValues(w.metricsPrefix).Inc()
 }

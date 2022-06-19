@@ -2,10 +2,10 @@ package operator
 
 import (
 	"context"
-
 	"github.com/bloxapp/ssv/eth1"
 	"github.com/bloxapp/ssv/monitoring/metrics"
 	"github.com/bloxapp/ssv/network"
+	"github.com/bloxapp/ssv/operator/benchmark"
 	"github.com/bloxapp/ssv/operator/duties"
 	"github.com/bloxapp/ssv/operator/validator"
 	forksprotocol "github.com/bloxapp/ssv/protocol/forks"
@@ -39,6 +39,9 @@ type Options struct {
 	ValidatorOptions validator.ControllerOptions `yaml:"ValidatorOptions"`
 
 	ForkVersion forksprotocol.ForkVersion
+
+	BenchmarkMsgCount   int64 `yaml:"BenchmarkMsgCount" env:"BENCHMARK_MSG_COUNT" env-description:"The amount of messages to benchmark"`
+	BenchmarkGoroutines int   `yaml:"BenchmarkGoroutines" env-default:"4" env:"BENCHMARK_GOROUTINES" env-description:"The amount of messages to benchmark"`
 }
 
 // operatorNode implements Node interface
@@ -50,11 +53,16 @@ type operatorNode struct {
 	beacon         beaconprotocol.Beacon
 	net            network.P2PNetwork
 	storage        Storage
-	eth1Client     eth1.Client
-	dutyCtrl       duties.DutyController
+
+	eth1Client eth1.Client
+	dutyCtrl   duties.DutyController
 	//fork           *forks.Forker
 
 	forkVersion forksprotocol.ForkVersion
+
+	// benchmark
+	benchmarkMsgCount   int64
+	benchmarkGoroutines int
 }
 
 // New is the constructor of operatorNode
@@ -82,6 +90,9 @@ func New(opts Options) Node {
 		}),
 
 		forkVersion: opts.ForkVersion,
+
+		benchmarkMsgCount:   opts.BenchmarkMsgCount,
+		benchmarkGoroutines: opts.BenchmarkGoroutines,
 	}
 
 	if err := node.init(opts); err != nil {
@@ -107,6 +118,16 @@ func (n *operatorNode) Start() error {
 	n.validatorsCtrl.StartNetworkHandlers()
 	go n.validatorsCtrl.UpdateValidatorMetaDataLoop()
 	go n.listenForCurrentSlot()
+
+	if n.benchmarkMsgCount > int64(0) {
+		go benchmark.DecidedValidation(&benchmark.Options{
+			Ctx:                 n.context,
+			Logger:              n.logger,
+			ValidatorsCtrl:      n.validatorsCtrl,
+			BenchmarkMsgCount:   n.benchmarkMsgCount,
+			BenchmarkGoroutines: n.benchmarkGoroutines,
+		})
+	}
 	n.dutyCtrl.Start()
 
 	return nil
