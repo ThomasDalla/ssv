@@ -5,6 +5,7 @@ import (
 	"github.com/bloxapp/ssv/network/forks"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"io"
@@ -50,6 +51,8 @@ type topicsCtrl struct {
 	containers map[string]*topicContainer
 	topicsLock *sync.RWMutex
 
+	outCache *cache.Cache
+
 	fork forks.Fork
 }
 
@@ -69,6 +72,8 @@ func NewTopicsController(ctx context.Context, logger *zap.Logger, msgHandler Pub
 		containers: make(map[string]*topicContainer),
 
 		subFilter: subFilter,
+
+		outCache: cache.New(time.Minute*8, time.Minute*10),
 
 		fork: fork,
 	}
@@ -133,9 +138,14 @@ func (ctrl *topicsCtrl) Broadcast(name string, data []byte, timeout time.Duratio
 
 	//ctrl.logger.Debug("broadcasting message on topic", zap.String("topic", name))
 
+	msgID := ctrl.fork.MsgID()(data)
+	if _, ok := ctrl.outCache.Get(msgID); ok {
+		return nil
+	}
 	err = tc.Publish(ctx, data)
 	if err == nil {
 		metricsPubsubOutbound.WithLabelValues(ctrl.fork.GetTopicBaseName(tc.topic.String())).Inc()
+		ctrl.outCache.SetDefault(msgID, true)
 	}
 	return err
 }
