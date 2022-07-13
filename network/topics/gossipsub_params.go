@@ -18,7 +18,7 @@ var (
 	gsMaxIHaveLength = 1000
 
 	// gsMcacheLen number of windows to retain full messages in cache for `IWANT` responses
-	gsMcacheLen = 80
+	gsMcacheLen = 128
 	// gsMcacheGossip number of windows to gossip about
 	gsMcacheGossip = 4
 
