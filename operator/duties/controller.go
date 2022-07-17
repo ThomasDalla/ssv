@@ -135,12 +135,13 @@ func (dc *dutyController) listenToTicker(slots <-chan types.Slot) {
 		if currentSlot-dc.lastSlot > 1 {
 			dc.logger.Debug("slot debug log", zap.Uint64("last slot", uint64(dc.lastSlot)), zap.Uint64("current slot", uint64(currentSlot)))
 		}
+		lastSlot := dc.lastSlot
 		dc.lastSlot = currentSlot
 		// notify current slot to channel
 		go dc.notifyCurrentSlot(currentSlot)
 
 		// execute duties
-		dc.logger.Debug("slot ticker", zap.Uint64("last slot", uint64(dc.lastSlot)), zap.Uint64("slot", uint64(currentSlot)))
+		dc.logger.Debug("slot ticker", zap.Uint64("last slot", uint64(lastSlot)), zap.Uint64("slot", uint64(currentSlot)))
 		duties, err := dc.fetcher.GetDuties(uint64(currentSlot))
 		if err != nil {
 			dc.logger.Warn("failed to get duties", zap.Error(err))
