@@ -1,12 +1,14 @@
 package abiparser
 
 import (
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 	"math/big"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 // Oess struct stands for operator encrypted secret share
@@ -40,11 +42,10 @@ type AdapterLegacy struct {
 // ParseOperatorAddedEvent parses OperatorAddedEventLegacy to OperatorAddedEvent
 func (a AdapterLegacy) ParseOperatorAddedEvent(
 	logger *zap.Logger,
-	data []byte,
-	topics []common.Hash,
+	log types.Log,
 	contractAbi abi.ABI,
 ) (*OperatorAddedEvent, error) {
-	event, err := a.legacyAbi.ParseOperatorAddedEvent(logger, data, contractAbi)
+	event, err := a.legacyAbi.ParseOperatorAddedEvent(logger, log, contractAbi)
 	if event == nil {
 		return nil, err
 	}
@@ -60,10 +61,10 @@ func (a AdapterLegacy) ParseOperatorAddedEvent(
 // ParseValidatorAddedEvent parses ValidatorAddedEventLegacy to ValidatorAddedEvent
 func (a AdapterLegacy) ParseValidatorAddedEvent(
 	logger *zap.Logger,
-	data []byte,
+	log types.Log,
 	contractAbi abi.ABI,
 ) (*ValidatorAddedEvent, error) {
-	event, err := a.legacyAbi.ParseValidatorAddedEvent(logger, data, contractAbi)
+	event, err := a.legacyAbi.ParseValidatorAddedEvent(logger, log, contractAbi)
 	if event == nil {
 		return nil, err
 	}
@@ -89,17 +90,22 @@ func (a AdapterLegacy) ParseValidatorAddedEvent(
 }
 
 // ParseValidatorRemovedEvent event is not supported in legacy format
-func (a AdapterLegacy) ParseValidatorRemovedEvent(logger *zap.Logger, data []byte, contractAbi abi.ABI) (*ValidatorRemovedEvent, error) {
+func (a AdapterLegacy) ParseValidatorRemovedEvent(logger *zap.Logger, log types.Log, contractAbi abi.ABI) (*ValidatorRemovedEvent, error) {
+	return nil, nil
+}
+
+// ParseOperatorRemovedEvent event is not supported in legacy format
+func (a AdapterLegacy) ParseOperatorRemovedEvent(logger *zap.Logger, log types.Log, contractAbi abi.ABI) (*OperatorRemovedEvent, error) {
 	return nil, nil
 }
 
 // ParseAccountLiquidatedEvent event is not supported in legacy format
-func (a AdapterLegacy) ParseAccountLiquidatedEvent(topics []common.Hash) (*AccountLiquidatedEvent, error) {
+func (a AdapterLegacy) ParseAccountLiquidatedEvent(log types.Log) (*AccountLiquidatedEvent, error) {
 	return nil, nil
 }
 
 // ParseAccountEnabledEvent event is not supported in legacy format
-func (a AdapterLegacy) ParseAccountEnabledEvent(topics []common.Hash) (*AccountEnabledEvent, error) {
+func (a AdapterLegacy) ParseAccountEnabledEvent(log types.Log) (*AccountEnabledEvent, error) {
 	return nil, nil
 }
 
@@ -110,23 +116,23 @@ type AbiLegacy struct {
 // ParseOperatorAddedEvent parses an OperatorAddedEvent
 func (a *AbiLegacy) ParseOperatorAddedEvent(
 	logger *zap.Logger,
-	data []byte,
+	log types.Log,
 	contractAbi abi.ABI,
 ) (*OperatorAddedEventLegacy, error) {
 	var operatorAddedEvent OperatorAddedEventLegacy
-	err := contractAbi.UnpackIntoInterface(&operatorAddedEvent, OperatorAdded, data)
+	err := contractAbi.UnpackIntoInterface(&operatorAddedEvent, OperatorAdded, log.Data)
 	if err != nil {
-		return nil, &UnpackError{
-			Err: errors.Wrap(err, "failed to unpack OperatorAdded event"),
+		return nil, &MalformedEventError{
+			Err: errors.Wrapf(err, "could not unpack %s event", OperatorAdded),
 		}
 	}
 	outAbi, err := getOutAbi()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not define ABI")
 	}
 	pubKey, err := readOperatorPubKey(operatorAddedEvent.PublicKey, outAbi)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "could not read %s event operator public key", OperatorAdded)
 	}
 	operatorAddedEvent.PublicKey = []byte(pubKey)
 	return &operatorAddedEvent, nil
@@ -135,20 +141,20 @@ func (a *AbiLegacy) ParseOperatorAddedEvent(
 // ParseValidatorAddedEvent parses ValidatorAddedEvent
 func (a *AbiLegacy) ParseValidatorAddedEvent(
 	logger *zap.Logger,
-	data []byte,
+	log types.Log,
 	contractAbi abi.ABI,
 ) (*ValidatorAddedEventLegacy, error) {
 	var validatorAddedEvent ValidatorAddedEventLegacy
-	err := contractAbi.UnpackIntoInterface(&validatorAddedEvent, ValidatorAdded, data)
+	err := contractAbi.UnpackIntoInterface(&validatorAddedEvent, ValidatorAdded, log.Data)
 	if err != nil {
-		return nil, &UnpackError{
-			Err: errors.Wrap(err, "failed to unpack ValidatorAdded event"),
+		return nil, &MalformedEventError{
+			Err: errors.Wrapf(err, "could not unpack %s event", ValidatorAdded),
 		}
 	}
 
 	outAbi, err := getOutAbi()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to define ABI")
+		return nil, errors.Wrap(err, "could not define ABI")
 	}
 
 	for i := range validatorAddedEvent.OessList {
@@ -156,13 +162,15 @@ func (a *AbiLegacy) ParseValidatorAddedEvent(
 
 		operatorPublicKey, err := readOperatorPubKey(validatorShare.OperatorPublicKey, outAbi)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to read OperatorPublicKey")
+			return nil, errors.Wrapf(err, "could not read %s event operator public key", ValidatorAdded)
 		}
 		validatorShare.OperatorPublicKey = []byte(operatorPublicKey) // set for further use in code
 
 		out, err := outAbi.Unpack("method", validatorShare.EncryptedKey)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to unpack EncryptedKey")
+			return nil, &MalformedEventError{
+				Err: errors.Wrapf(err, "could not unpack %s event EncryptedKey", ValidatorAdded),
+			}
 		}
 		if encryptedSharePrivateKey, ok := out[0].(string); ok {
 			validatorShare.EncryptedKey = []byte(encryptedSharePrivateKey)
@@ -175,7 +183,7 @@ func (a *AbiLegacy) ParseValidatorAddedEvent(
 func readOperatorPubKey(operatorPublicKey []byte, outAbi abi.ABI) (string, error) {
 	outOperatorPublicKey, err := outAbi.Unpack("method", operatorPublicKey)
 	if err != nil {
-		return "", &UnpackError{
+		return "", &MalformedEventError{
 			Err: err,
 		}
 	}

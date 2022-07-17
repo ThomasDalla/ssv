@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/rsa"
 	"encoding/hex"
+	forksfactory "github.com/bloxapp/ssv/network/forks/factory"
+	qbftcontroller "github.com/bloxapp/ssv/protocol/v1/qbft/controller"
 	"sync"
 	"time"
 
@@ -55,11 +57,16 @@ type ControllerOptions struct {
 	Shares                     []ShareOptions `yaml:"Shares"`
 	ShareEncryptionKeyProvider ShareEncryptionKeyProvider
 	CleanRegistryData          bool
-	FullNode                   bool `yaml:"FullNode" env:"FORCE_HISTORY_KEY" env-default:"false" env-description:"Flag that indicates whether the node saves decided history or just the latest messages"`
+	FullNode                   bool `yaml:"FullNode" env:"FULLNODE" env-default:"false" env-description:"Flag that indicates whether the node saves decided history or just the latest messages"`
 	KeyManager                 beaconprotocol.KeyManager
 	OperatorPubKey             string
 	RegistryStorage            registrystorage.OperatorsCollection
 	ForkVersion                forksprotocol.ForkVersion
+	NewDecidedHandler          qbftcontroller.NewDecidedHandler
+
+	// worker flags
+	WorkersCount    int `yaml:"MsgWorkersCount" env:"MSG_WORKERS_COUNT" env-default:"512" env-description:"Number of goroutines to use for message workers"`
+	QueueBufferSize int `yaml:"MsgWorkerBufferSize" env:"MSG_WORKER_BUFFER_SIZE" env-default:"1024" env-description:"Buffer size for message workers"`
 }
 
 // Controller represent the validators controller,
@@ -106,6 +113,7 @@ type controller struct {
 // decided message processing in the qbft controllers
 func (c *controller) OnFork(forkVersion forksprotocol.ForkVersion) error {
 	c.forkVersion = forkVersion
+	c.validatorOptions.ForkVersion = forkVersion
 
 	storageHandler, ok := c.validatorOptions.IbftStorage.(forksprotocol.ForkHandler)
 	if !ok {
@@ -147,11 +155,13 @@ func NewController(options ControllerOptions) Controller {
 	// lookup in a map that holds all relevant operators
 	operatorsIDs := &sync.Map{}
 
+	msgID := forksfactory.NewFork(options.ForkVersion).MsgID()
+
 	workerCfg := &worker.Config{
 		Ctx:          options.Context,
 		Logger:       options.Logger,
-		WorkersCount: 1,   // TODO flag
-		Buffer:       100, // TODO flag
+		WorkersCount: options.WorkersCount,
+		Buffer:       options.QueueBufferSize,
 	}
 
 	validatorOptions := &validator.Options{
@@ -167,6 +177,7 @@ func NewController(options ControllerOptions) Controller {
 		IbftStorage:                qbftStorage,
 		ReadMode:                   false, // set to false for committee validators. if non committee, we set validator with true value
 		FullNode:                   options.FullNode,
+		NewDecidedHandler:          options.NewDecidedHandler,
 	}
 	ctrl := controller{
 		collection:                 collection,
@@ -188,7 +199,7 @@ func NewController(options ControllerOptions) Controller {
 
 		operatorsIDs: operatorsIDs,
 
-		messageRouter: newMessageRouter(options.Logger),
+		messageRouter: newMessageRouter(options.Logger, msgID),
 		messageWorker: worker.NewWorker(workerCfg),
 	}
 
@@ -231,14 +242,20 @@ func (c *controller) handleRouterMessages() {
 	for {
 		select {
 		case <-ctx.Done():
+			c.logger.Debug("router message handler stopped")
 			return
 		case msg := <-ch:
 			pk := msg.ID.GetValidatorPK()
 			hexPK := hex.EncodeToString(pk)
 
 			if v, ok := c.validatorsMap.GetValidator(hexPK); ok {
-				v.ProcessMsg(&msg)
-			} else if c.forkVersion != forksprotocol.V0ForkVersion && msg.MsgType == message.SSVDecidedMsgType {
+				if err := v.ProcessMsg(&msg); err != nil {
+					c.logger.Warn("failed to process message", zap.Error(err))
+				}
+			} else if c.forkVersion != forksprotocol.V0ForkVersion {
+				if msg.MsgType != message.SSVDecidedMsgType && msg.MsgType != message.SSVConsensusMsgType {
+					continue // not supporting other types
+				}
 				if !c.messageWorker.TryEnqueue(&msg) { // start to save non committee decided messages only post fork
 					c.logger.Warn("Failed to enqueue post consensus message: buffer is full")
 				}
@@ -247,14 +264,33 @@ func (c *controller) handleRouterMessages() {
 	}
 }
 
+// getShare returns the share of the given validator public key
+// TODO: optimize
+func (c *controller) getShare(pk message.ValidatorPK) (*beaconprotocol.Share, error) {
+	share, found, err := c.collection.GetValidatorShare(pk)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not read validator share [%s]", pk)
+	}
+	if !found {
+		return nil, nil
+	}
+	return share, nil
+}
+
 func (c *controller) handleWorkerMessages(msg *message.SSVMessage) error {
+	share, err := c.getShare(msg.GetIdentifier().GetValidatorPK())
+	if err != nil {
+		return err
+	}
+	if share == nil {
+		return errors.Errorf("could not find validator [%s]", hex.EncodeToString(msg.GetIdentifier().GetValidatorPK()))
+	}
+
 	opts := *c.validatorOptions
+	opts.Share = share
 	opts.ReadMode = true
 
-	val := validator.NewValidator(&opts)
-	// TODO(nkryuchkov): we might need to call val.Start(), we need to check it
-	val.ProcessMsg(msg) // TODO should return error
-	return nil
+	return validator.NewValidator(&opts).ProcessMsg(msg)
 }
 
 // ListenToEth1Events is listening to events coming from eth1 client
@@ -268,18 +304,17 @@ func (c *controller) ListenToEth1Events(feed *event.Feed) {
 	for {
 		select {
 		case e := <-cn:
-			if err := handler(*e); err != nil {
-				c.logger.Error("could not process ongoing eth1 event", zap.Error(err))
-			}
+			logFields, err := handler(*e)
+			_ = eth1.HandleEventResult(c.logger, *e, logFields, err, true)
 		case err := <-sub.Err():
-			c.logger.Error("event feed subscription error", zap.Error(err))
+			c.logger.Warn("event feed subscription error", zap.Error(err))
 		}
 	}
 }
 
 // StartValidators loads all persisted shares and setup the corresponding validators
 func (c *controller) StartValidators() {
-	shares, err := c.collection.GetEnabledOperatorValidatorShares(c.operatorPubKey)
+	shares, err := c.collection.GetOperatorValidatorShares(c.operatorPubKey, true)
 	if err != nil {
 		c.logger.Fatal("failed to get validators shares", zap.Error(err))
 	}
@@ -288,18 +323,6 @@ func (c *controller) StartValidators() {
 		return
 	}
 	c.setupValidators(shares)
-	//// inject handler for finding relevant operators
-	//p2p.UseLookupOperatorHandler(c.network, func(oid string) bool {
-	//	_, ok := c.operatorsIDs.Load(oid)
-	//	return ok
-	//})
-	// print current relevant operators (ids)
-	ids := []string{}
-	c.operatorsIDs.Range(func(key, value interface{}) bool {
-		ids = append(ids, key.(string))
-		return true
-	})
-	c.logger.Debug("relevant operators", zap.Int("len", len(ids)), zap.Strings("op_ids", ids))
 }
 
 // setupValidators setup and starts validators from the given shares
@@ -338,7 +361,7 @@ func (c *controller) setupValidators(shares []*beaconprotocol.Share) {
 func (c *controller) StartNetworkHandlers() {
 	c.network.UseMessageRouter(c.messageRouter)
 	go c.handleRouterMessages()
-	c.messageWorker.AddHandler(c.handleWorkerMessages)
+	c.messageWorker.UseHandler(c.handleWorkerMessages)
 }
 
 // updateValidatorsMetadata updates metadata of the given public keys.
@@ -348,7 +371,7 @@ func (c *controller) updateValidatorsMetadata(pubKeys [][]byte) {
 	if len(pubKeys) > 0 {
 		c.logger.Debug("updating validators", zap.Int("count", len(pubKeys)))
 		if err := beaconprotocol.UpdateValidatorsMetadata(pubKeys, c, c.beacon, c.onMetadataUpdated); err != nil {
-			c.logger.Error("could not update all validators", zap.Error(err))
+			c.logger.Warn("could not update all validators", zap.Error(err))
 		}
 	}
 }
@@ -365,7 +388,7 @@ func (c *controller) UpdateValidatorMetadata(pk string, metadata *beaconprotocol
 		}
 		_, err := c.startValidator(v)
 		if err != nil {
-			c.logger.Error("could not start validator", zap.Error(err))
+			c.logger.Warn("could not start validator", zap.Error(err))
 		}
 	}
 	return nil
@@ -391,7 +414,7 @@ func (c *controller) GetValidatorsIndices() []spec.ValidatorIndex {
 		return nil
 	})
 	if err != nil {
-		c.logger.Error("failed to get all validators public keys", zap.Error(err))
+		c.logger.Warn("failed to get all validators public keys", zap.Error(err))
 	}
 
 	go c.updateValidatorsMetadata(toFetch)
@@ -417,7 +440,7 @@ func (c *controller) onMetadataUpdated(pk string, meta *beaconprotocol.Validator
 		}
 		_, err := c.startValidator(v)
 		if err != nil {
-			c.logger.Error("could not start validator after metadata update",
+			c.logger.Warn("could not start validator after metadata update",
 				zap.String("pk", pk), zap.Error(err), zap.Any("metadata", meta))
 		}
 	}
@@ -456,7 +479,6 @@ func (c *controller) onShareCreate(validatorEvent abiparser.ValidatorAddedEvent)
 		if err := c.keyManager.AddShare(shareSecret); err != nil {
 			return nil, isOperatorShare, errors.Wrap(err, "could not add share secret to key manager")
 		}
-		logger.Info("share was added successfully to key manager")
 	}
 
 	// save validator data
@@ -475,7 +497,7 @@ func (c *controller) onShareRemove(pk string, removeSecret bool) error {
 
 	// stop instance
 	if v != nil {
-		if err := v.Close(); err == nil {
+		if err := v.Close(); err != nil {
 			return errors.Wrap(err, "could not close validator")
 		}
 	}
@@ -520,9 +542,9 @@ func (c *controller) UpdateValidatorMetaDataLoop() {
 	for {
 		time.Sleep(c.metadataUpdateInterval)
 
-		shares, err := c.collection.GetEnabledOperatorValidatorShares(c.operatorPubKey)
+		shares, err := c.collection.GetOperatorValidatorShares(c.operatorPubKey, true)
 		if err != nil {
-			c.logger.Error("could not get validators shares for metadata update", zap.Error(err))
+			c.logger.Warn("could not get validators shares for metadata update", zap.Error(err))
 			continue
 		}
 		var pks [][]byte

@@ -19,11 +19,9 @@ func GetHighest(logger *zap.Logger, remoteMsgs ...p2pprotocol.SyncResult) (highe
 			continue
 		}
 		if sm == nil {
-			logger.Debug("sync message not found")
 			continue
 		}
 		if len(sm.Data) == 0 {
-			logger.Warn("empty sync message")
 			continue
 		}
 		signedMsg := sm.Data[0]
@@ -50,4 +48,28 @@ func ExtractSyncMsg(msg *message.SSVMessage) (*message.SyncMessage, error) {
 		return nil, errors.Errorf("failed to get sync message: %s", sm.Status.String())
 	}
 	return sm, nil
+}
+
+// GetHighestSignedMessage returns the highest decided among the given set of messages.
+// assuming all messages are of the same identifier
+func GetHighestSignedMessage(signedMsgs ...*message.SignedMessage) *message.SignedMessage {
+	var highest *message.SignedMessage
+	for _, msg := range signedMsgs {
+		if msg == nil || msg.Message == nil {
+			continue
+		}
+		if highest == nil {
+			highest = msg
+			continue
+		}
+		// if higher or (equal + more signers) then update highest
+		if msg.Message.Higher(highest.Message) {
+			highest = msg
+		} else if msg.Message.Height == highest.Message.Height && msg.HasMoreSigners(highest) {
+			highest = msg
+		} else {
+			// older
+		}
+	}
+	return highest
 }

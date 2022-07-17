@@ -79,6 +79,8 @@ type Instance struct {
 	stageChanCloseChan           sync.Mutex
 
 	changeRoundStore qbftstorage.ChangeRoundStore
+	ctx              context.Context
+	cancelCtx        context.CancelFunc
 }
 
 // NewInstanceWithState used for testing, not PROD!
@@ -94,8 +96,11 @@ func NewInstance(opts *Options) Instancer {
 	role := opts.Identifier.GetRoleType().String()
 	metricsIBFTStage.WithLabelValues(role, hex.EncodeToString(pk)).Set(float64(qbft.RoundStateNotStarted))
 	logger := opts.Logger.With(zap.Uint64("seq_num", uint64(opts.Height)))
+	ctx, cancelCtx := context.WithCancel(context.Background())
 
 	ret := &Instance{
+		ctx:            ctx,
+		cancelCtx:      cancelCtx,
 		ValidatorShare: opts.ValidatorShare,
 		state:          generateState(opts),
 		network:        opts.Network,
@@ -109,7 +114,7 @@ func NewInstance(opts *Options) Instancer {
 		CommitMessages:      msgcontinmem.New(uint64(opts.ValidatorShare.ThresholdSize()), uint64(opts.ValidatorShare.PartialThresholdSize())),
 		ChangeRoundMessages: msgcontinmem.New(uint64(opts.ValidatorShare.ThresholdSize()), uint64(opts.ValidatorShare.PartialThresholdSize())),
 
-		roundTimer: roundtimer.New(context.Background(), logger.With(zap.String("who", "RoundTimer"))),
+		roundTimer: roundtimer.New(ctx, logger.With(zap.String("who", "RoundTimer"))),
 
 		// locks
 		runInitOnce:                  &sync.Once{},
@@ -182,12 +187,12 @@ func (i *Instance) Start(inputValue []byte) error {
 
 			msg, err := i.generatePrePrepareMessage(i.State().GetInputValue())
 			if err != nil {
-				i.Logger.Error("failed to generate pre-prepare message", zap.Error(err))
+				i.Logger.Warn("failed to generate pre-prepare message", zap.Error(err))
 				return
 			}
 
 			if err := i.SignAndBroadcast(&msg); err != nil {
-				i.Logger.Fatal("could not broadcast pre-prepare", zap.Error(err))
+				i.Logger.Error("could not broadcast pre-prepare", zap.Error(err))
 			}
 		}()
 	}
@@ -208,6 +213,7 @@ func (i *Instance) Stop() {
 	// stop can be run just once
 	i.runStopOnce.Do(func() {
 		i.stop()
+		i.cancelCtx()
 	})
 }
 
@@ -286,7 +292,11 @@ func (i *Instance) bumpToRound(round message.Round) {
 // ProcessStageChange set the state's round state and pushed the new state into the state channel
 func (i *Instance) ProcessStageChange(stage qbft.RoundState) {
 	// in order to prevent race condition between timer timeout and decided state. once decided we need to prevent any other new state
-	if i.State().Stage.Load() == int32(qbft.RoundStateDecided) && stage != qbft.RoundStateStopped {
+	currentStage := i.State().Stage.Load()
+	if currentStage == int32(qbft.RoundStateStopped) {
+		return
+	}
+	if currentStage == int32(qbft.RoundStateDecided) && stage != qbft.RoundStateStopped {
 		return
 	}
 

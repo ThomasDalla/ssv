@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	forksprotocol "github.com/bloxapp/ssv/protocol/forks"
 	"sync"
 	"time"
 
@@ -19,8 +20,7 @@ const (
 	// localDiscoveryInterval is how often we re-publish our mDNS records.
 	localDiscoveryInterval = time.Second / 2
 	// LocalDiscoveryServiceTag is used in our mDNS advertisements to discover other peers
-	LocalDiscoveryServiceTag = "bloxstaking.ssv"
-	//LocalDiscoveryServiceTag = "ssv.discovery" // TODO: change
+	LocalDiscoveryServiceTag = "ssv.discovery"
 )
 
 // localDiscovery implements ssv_discovery.Service using mDNS and KAD-DHT
@@ -42,12 +42,12 @@ func NewLocalDiscovery(ctx context.Context, logger *zap.Logger, host host.Host) 
 
 	svc, err := mdnsDiscover.NewMdnsService(ctx, host, localDiscoveryInterval, LocalDiscoveryServiceTag)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create new mDNS service")
+		return nil, errors.Wrap(err, "could not create new mDNS service")
 	}
 
 	routingDHT, disc, err := NewKadDHT(ctx, host, dht.ModeServer)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create DHT")
+		return nil, errors.Wrap(err, "could not create DHT")
 	}
 
 	return &localDiscovery{
@@ -91,13 +91,19 @@ func (md *localDiscovery) FindPeers(ctx context.Context, ns string, opt ...disco
 }
 
 // RegisterSubnets implements Service
-func (md *localDiscovery) RegisterSubnets(subnets ...int64) error {
+func (md *localDiscovery) RegisterSubnets(subnets ...int) error {
 	// TODO
 	return nil
 }
 
 // DeregisterSubnets implements Service
-func (md *localDiscovery) DeregisterSubnets(subnets ...int64) error {
+func (md *localDiscovery) DeregisterSubnets(subnets ...int) error {
+	// TODO
+	return nil
+}
+
+// UpdateForkVersion implements Service
+func (md *localDiscovery) UpdateForkVersion(forkv forksprotocol.ForkVersion) error {
 	// TODO
 	return nil
 }

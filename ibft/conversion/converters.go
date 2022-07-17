@@ -135,7 +135,7 @@ func ToSignedMessageV1(sm *proto.SignedMessage) (*message.SignedMessage, error) 
 	signed.Signature = sm.GetSignature()
 	signers := sm.GetSignerIds()
 	for _, s := range signers {
-		signed.Signers = append(signed.Signers, message.OperatorID(s))
+		signed.Signers = message.AppendSigners(signed.Signers, message.OperatorID(s))
 	}
 	if msg := sm.GetMessage(); msg != nil {
 		signed.Message = new(message.ConsensusMessage)
@@ -182,13 +182,6 @@ func ToSignedMessageV1(sm *proto.SignedMessage) (*message.SignedMessage, error) 
 }
 
 func toV1ChangeRound(changeRoundData []byte) ([]byte, error) {
-	// TODO need to remove log once done with testing
-	r, err := json.Marshal(changeRoundData)
-	if err == nil {
-		logex.GetLogger().Debug("------ convert change round v0 -> v1", zap.String("data marshaled", string(r)), zap.ByteString("data byte", changeRoundData))
-	} else {
-		logex.GetLogger().Debug("------ FAILED convert change round v0 -> v1", zap.Error(err))
-	}
 	ret := &proto.ChangeRoundData{}
 	if err := json.Unmarshal(changeRoundData, ret); err != nil {
 		logex.GetLogger().Warn("failed to unmarshal v0 change round struct", zap.Error(err))
@@ -197,7 +190,7 @@ func toV1ChangeRound(changeRoundData []byte) ([]byte, error) {
 
 	var signers []message.OperatorID
 	for _, signer := range ret.GetSignerIds() {
-		signers = append(signers, message.OperatorID(signer))
+		signers = message.AppendSigners(signers, message.OperatorID(signer))
 	}
 
 	consensusMsg := &message.ConsensusMessage{}

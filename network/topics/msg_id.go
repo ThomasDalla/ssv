@@ -70,23 +70,19 @@ func (handler *msgIDHandler) MsgID() func(pmsg *ps_pb.Message) string {
 		}
 		logger := handler.logger.With(zap.ByteString("seq_no", pmsg.GetSeqno()))
 		if len(pmsg.GetData()) == 0 {
-			logger.Warn("empty message", zap.ByteString("pmsg.From", pmsg.GetFrom()))
-			//return fmt.Sprintf("%s/%s", MsgIDEmptyMessage, pubsub.DefaultMsgIdFn(pmsg))
 			return MsgIDEmptyMessage
 		}
 		pid, err := peer.IDFromBytes(pmsg.GetFrom())
 		if err != nil {
-			logger.Warn("could not convert sender to peer id",
-				zap.ByteString("pmsg.From", pmsg.GetFrom()), zap.Error(err))
 			return MsgIDBadPeerID
 		}
 		logger = logger.With(zap.String("from", pid.String()))
-		ssvMsg, err := handler.fork.DecodeNetworkMsg(pmsg.GetData())
-		if err != nil {
-			logger.Warn("invalid encoding", zap.Error(err))
-			return MsgIDBadEncodedMessage
-		}
-		mid := handler.fork.MsgID()(ssvMsg.Data)
+		//ssvMsg, err := handler.fork.DecodeNetworkMsg(pmsg.GetData())
+		//if err != nil {
+		//	logger.Warn("invalid encoding", zap.Error(err))
+		//	return MsgIDBadEncodedMessage
+		//}
+		mid := handler.fork.MsgID()(pmsg.GetData())
 		if len(mid) == 0 {
 			logger.Warn("could not create msg_id")
 			return MsgIDError

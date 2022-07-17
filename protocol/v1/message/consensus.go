@@ -4,15 +4,12 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
-	"github.com/bloxapp/ssv/utils/logex"
-	"go.uber.org/zap"
-
-	"github.com/herumi/bls-eth-go-binary/bls"
-	"github.com/pkg/errors"
-
 	"github.com/bloxapp/ssv/ibft/proto"
 	forksprotocol "github.com/bloxapp/ssv/protocol/forks"
 	"github.com/bloxapp/ssv/utils/format"
+	"github.com/herumi/bls-eth-go-binary/bls"
+	"github.com/pkg/errors"
+	"sort"
 )
 
 // ErrDuplicateMsgSigner is thrown when trying to sign multiple times with the same signer
@@ -243,6 +240,32 @@ func (msg *ConsensusMessage) Sign(sk *bls.SecretKey, forkVersion string) (*bls.S
 	return sk.SignByte(root), nil
 }
 
+// Higher checks if the message is higher than the other
+func (msg *ConsensusMessage) Higher(other *ConsensusMessage) bool {
+	return msg.Height > other.Height
+}
+
+// AppendSigners is a utility that helps to ensure distinct values
+// TODO: sorting?
+func AppendSigners(signers []OperatorID, appended ...OperatorID) []OperatorID {
+	for _, signer := range appended {
+		signers = appendSigner(signers, signer)
+	}
+	sort.Slice(signers, func(i, j int) bool {
+		return signers[i] < signers[j]
+	})
+	return signers
+}
+
+func appendSigner(signers []OperatorID, signer OperatorID) []OperatorID {
+	for _, s := range signers {
+		if s == signer { // known
+			return signers
+		}
+	}
+	return append(signers, signer)
+}
+
 // SignedMessage contains a message and the corresponding signature + signers list
 type SignedMessage struct {
 	Signature Signature
@@ -289,6 +312,11 @@ func (signedMsg *SignedMessage) MutualSigners(sig MsgSignature) bool {
 	return false
 }
 
+// HasMoreSigners checks if the message has more signers than the other
+func (signedMsg *SignedMessage) HasMoreSigners(other *SignedMessage) bool {
+	return len(signedMsg.GetSigners()) > len(other.GetSigners())
+}
+
 // Aggregate will aggregate the signed message if possible (unique signers, same digest, valid)
 func (signedMsg *SignedMessage) Aggregate(sigs ...MsgSignature) error {
 	for _, sig := range sigs {
@@ -301,7 +329,7 @@ func (signedMsg *SignedMessage) Aggregate(sigs ...MsgSignature) error {
 			return errors.Wrap(err, "could not aggregate signatures")
 		}
 		signedMsg.Signature = aggregated
-		signedMsg.Signers = append(signedMsg.Signers, sig.GetSigners()...)
+		signedMsg.Signers = AppendSigners(signedMsg.Signers, sig.GetSigners()...)
 	}
 	return nil
 }
@@ -426,8 +454,6 @@ func (msg *ConsensusMessage) convertToV0Root() ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not encode message")
 	}
-
-	logex.GetLogger().Debug("---- root ----", zap.String("r", string(marshaledRoot)))
 
 	hasher := sha256.New()
 	_, err = hasher.Write(marshaledRoot)

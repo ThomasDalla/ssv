@@ -45,6 +45,7 @@ func TestConsumeMessages(t *testing.T) {
 		name            string
 		msgs            []*message.SSVMessage
 		expected        []*message.SSVMessage
+		expectedQLen    int
 		lastHeight      message.Height
 		currentInstance instance.Instancer
 	}{
@@ -54,6 +55,7 @@ func TestConsumeMessages(t *testing.T) {
 				generateConsensusMsg(t, message.Height(1), 0, ctrl.Identifier, message.CommitMsgType),
 			},
 			[]*message.SSVMessage{generateConsensusMsg(t, message.Height(1), 0, ctrl.Identifier, message.CommitMsgType)},
+			0,
 			message.Height(2),
 			nil,
 		},
@@ -63,6 +65,7 @@ func TestConsumeMessages(t *testing.T) {
 				generateConsensusMsg(t, message.Height(0), 0, ctrl.Identifier, message.CommitMsgType),
 			},
 			nil,
+			0,
 			message.Height(2),
 			nil,
 		},
@@ -72,6 +75,7 @@ func TestConsumeMessages(t *testing.T) {
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(1), ctrl.Identifier),
 			},
 			[]*message.SSVMessage{generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(1), ctrl.Identifier)},
+			0,
 			message.Height(2),
 			nil,
 		},
@@ -84,6 +88,7 @@ func TestConsumeMessages(t *testing.T) {
 				generatePostConsensusOrSig(t, message.SSVPostConsensusMsgType, message.Height(1), ctrl.Identifier),
 			},
 			[]*message.SSVMessage{generatePostConsensusOrSig(t, message.SSVPostConsensusMsgType, message.Height(1), ctrl.Identifier)},
+			3,
 			message.Height(1),
 			nil,
 		},
@@ -92,9 +97,9 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generateConsensusMsg(t, message.Height(0), 1, ctrl.Identifier, message.ProposalMsgType), // verify priority is right
 				generateConsensusMsg(t, message.Height(1), 1, ctrl.Identifier, message.ProposalMsgType),
-				generateConsensusMsg(t, message.Height(1), 2, ctrl.Identifier, message.ProposalMsgType), // verify priority is right
 			},
 			[]*message.SSVMessage{generateConsensusMsg(t, message.Height(1), message.Round(1), ctrl.Identifier, message.ProposalMsgType)},
+			1,
 			message.Height(1),
 			generateInstance(1, 1, qbft.RoundStateNotStarted),
 		},
@@ -107,6 +112,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(0), ctrl.Identifier),
 			},
+			1,
 			message.Height(0),
 			generateInstance(0, 1, qbft.RoundStateNotStarted),
 		},
@@ -120,6 +126,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generateConsensusMsg(t, message.Height(0), message.Round(1), ctrl.Identifier, message.PrepareMsgType),
 			},
+			0,
 			message.Height(0),
 			generateInstance(0, 1, qbft.RoundStatePrePrepare),
 		},
@@ -133,6 +140,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generateConsensusMsg(t, message.Height(0), message.Round(1), ctrl.Identifier, message.CommitMsgType),
 			},
+			1,
 			message.Height(0),
 			generateInstance(0, 1, qbft.RoundStatePrepare),
 		},
@@ -146,6 +154,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generateConsensusMsg(t, message.Height(0), message.Round(1), ctrl.Identifier, message.RoundChangeMsgType),
 			},
+			2,
 			message.Height(0),
 			generateInstance(0, 1, qbft.RoundStateChangeRound),
 		},
@@ -159,6 +168,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(0), ctrl.Identifier),
 			},
+			2,
 			message.Height(0),
 			generateInstance(0, 1, qbft.RoundStatePrePrepare),
 		},
@@ -171,6 +181,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generateConsensusMsg(t, message.Height(0), message.Round(1), ctrl.Identifier, message.RoundChangeMsgType),
 			},
+			1,
 			message.Height(0),
 			generateInstance(0, 1, qbft.RoundStatePrePrepare),
 		},
@@ -182,6 +193,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generateConsensusMsg(t, message.Height(0), message.Round(1), ctrl.Identifier, message.CommitMsgType), // expect previews height commit
 			},
+			0,
 			message.Height(1), // current height
 			nil,
 		},
@@ -193,6 +205,7 @@ func TestConsumeMessages(t *testing.T) {
 			[]*message.SSVMessage{
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(0), ctrl.Identifier),
 			},
+			0,
 			message.Height(1), // current height
 			nil,
 		},
@@ -207,6 +220,7 @@ func TestConsumeMessages(t *testing.T) {
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(2), ctrl.Identifier),
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(1), ctrl.Identifier),
 			},
+			2,
 			message.Height(1),
 			nil,
 		},
@@ -221,8 +235,57 @@ func TestConsumeMessages(t *testing.T) {
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(2), ctrl.Identifier),
 				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(1), ctrl.Identifier),
 			},
+			2,
 			message.Height(1),
 			generateInstance(1, 1, qbft.RoundStatePrePrepare),
+		},
+		{
+			"instance_change_round_clean_old_messages",
+			[]*message.SSVMessage{
+				generateConsensusMsg(t, message.Height(10), message.Round(2), ctrl.Identifier, message.RoundChangeMsgType),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(10), ctrl.Identifier),
+				generateConsensusMsg(t, message.Height(9), message.Round(1), ctrl.Identifier, message.CommitMsgType),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(9), ctrl.Identifier),
+				generateConsensusMsg(t, message.Height(8), message.Round(1), ctrl.Identifier, message.ProposalMsgType), // should be removed
+				generateConsensusMsg(t, message.Height(8), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+				generateConsensusMsg(t, message.Height(8), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+				generateConsensusMsg(t, message.Height(7), message.Round(1), ctrl.Identifier, message.ProposalMsgType), // should be removed
+				generateConsensusMsg(t, message.Height(7), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+				generateConsensusMsg(t, message.Height(7), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+			},
+			[]*message.SSVMessage{
+				generateConsensusMsg(t, message.Height(10), message.Round(2), ctrl.Identifier, message.RoundChangeMsgType),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(10), ctrl.Identifier),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(9), ctrl.Identifier),
+				generateConsensusMsg(t, message.Height(9), message.Round(1), ctrl.Identifier, message.CommitMsgType),
+			},
+			1, // only "signed_index" for decided in height 9
+			message.Height(10),
+			generateInstance(10, 1, qbft.RoundStateChangeRound),
+		},
+		{
+			"no_running_instance_change_round_clean_old_messages",
+			[]*message.SSVMessage{
+				generatePostConsensusOrSig(t, message.SSVPostConsensusMsgType, message.Height(10), ctrl.Identifier),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(10), ctrl.Identifier),
+				generateConsensusMsg(t, message.Height(9), message.Round(1), ctrl.Identifier, message.CommitMsgType),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(9), ctrl.Identifier),
+				generateConsensusMsg(t, message.Height(8), message.Round(1), ctrl.Identifier, message.ProposalMsgType), // should be removed
+				generateConsensusMsg(t, message.Height(8), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+				generateConsensusMsg(t, message.Height(8), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+				generateConsensusMsg(t, message.Height(7), message.Round(1), ctrl.Identifier, message.ProposalMsgType), // should be removed
+				generateConsensusMsg(t, message.Height(7), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+				generateConsensusMsg(t, message.Height(7), message.Round(1), ctrl.Identifier, message.PrepareMsgType),  // should be removed
+			},
+			[]*message.SSVMessage{
+				generatePostConsensusOrSig(t, message.SSVPostConsensusMsgType, message.Height(10), ctrl.Identifier),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(10), ctrl.Identifier),
+				generatePostConsensusOrSig(t, message.SSVDecidedMsgType, message.Height(9), ctrl.Identifier),
+				generateConsensusMsg(t, message.Height(9), message.Round(1), ctrl.Identifier, message.CommitMsgType),
+			},
+			1, // only "signed_index" for decided in height 10
+			message.Height(10),
+			nil,
 		},
 	}
 
@@ -234,56 +297,66 @@ func TestConsumeMessages(t *testing.T) {
 			ctrl.signatureState = SignatureState{}
 			ctrl.signatureState.setHeight(test.lastHeight)
 
+			// populating msg's
 			for _, msg := range test.msgs {
 				ctrl.q.Add(msg)
 			}
 
+			// set timeout
 			go func() {
 				time.Sleep(time.Second * 2) // test time out
 				if ctx.Err() == nil && test.expected != nil {
 					panic("time out")
-				} else {
-					cancel()
-					q.Clean(func(s msgqueue.Index) bool {
-						return true
-					})
 				}
 			}()
 
+			var wg sync.WaitGroup
+			wg.Add(len(test.expected))
 			processed := 0
-			ctrl.startQueueConsumer(func(msg *message.SSVMessage) error {
-				// when done, cancel ctx
-				ctrl.logger.Debug("process msg")
+			go func() {
+				ctrl.startQueueConsumer(func(msg *message.SSVMessage) error {
+					ctrl.logger.Debug("processing msg", zap.String("type", msg.MsgType.String()))
+					if processed == len(test.expected) {
+						ctrl.logger.Debug("processed all expected msg's. ignore msg")
+						return nil
+					}
+					// when done, cancel ctx
+					expectedMsg := test.expected[processed]
+					require.Equal(t, expectedMsg.MsgType, msg.MsgType)
 
-				expectedMsg := test.expected[processed]
-				require.Equal(t, expectedMsg.MsgType, msg.MsgType)
+					switch expectedMsg.MsgType {
+					case message.SSVDecidedMsgType:
+						fallthrough
+					case message.SSVConsensusMsgType:
+						testSignedMsg := new(message.SignedMessage)
+						require.NoError(t, testSignedMsg.Decode(expectedMsg.Data))
 
-				switch expectedMsg.MsgType {
-				case message.SSVDecidedMsgType:
-					fallthrough
-				case message.SSVConsensusMsgType:
-					testSignedMsg := new(message.SignedMessage)
-					require.NoError(t, testSignedMsg.Decode(expectedMsg.Data))
+						signedMsg := new(message.SignedMessage)
+						require.NoError(t, signedMsg.Decode(msg.Data))
 
-					signedMsg := new(message.SignedMessage)
-					require.NoError(t, signedMsg.Decode(msg.Data))
+						require.Equal(t, testSignedMsg.Message.MsgType, signedMsg.Message.MsgType)
+						require.Equal(t, testSignedMsg.Message.Height, signedMsg.Message.Height)
+						require.Equal(t, testSignedMsg.Message.Round, signedMsg.Message.Round)
+						ctrl.logger.Debug("msg info", zap.String("type", signedMsg.Message.MsgType.String()), zap.Uint64("h", uint64(signedMsg.Message.Height)))
+					}
+					processed++
+					ctrl.logger.Debug("processed", zap.Int("processed", processed), zap.Int("total", len(test.expected)))
+					wg.Done()
+					return nil
+				})
+				wg.Done()
+			}()
 
-					require.Equal(t, testSignedMsg.Message.MsgType, signedMsg.Message.MsgType)
-					require.Equal(t, testSignedMsg.Message.Height, signedMsg.Message.Height)
-					require.Equal(t, testSignedMsg.Message.Round, signedMsg.Message.Round)
-				}
-				processed++
-				ctrl.logger.Debug("--------- processed -----", zap.Int("processed", processed), zap.Int("total", len(test.expected)), zap.String("name", test.name))
-
-				if processed == len(test.expected) {
-					ctrl.logger.Debug("--------- done by procesed -----", zap.String("name", test.name))
-					cancel()
-					q.Clean(func(s msgqueue.Index) bool {
-						return true
-					})
-				}
-				return nil
+			wg.Wait()                          // wait until all expected msg's are processed
+			time.Sleep(time.Millisecond * 500) // wait for clean old msg's
+			require.Equal(t, test.expectedQLen, ctrl.q.Len())
+			wg.Add(1)
+			cancel()
+			wg.Wait()                             // wait for queue to cancel
+			q.Clean(func(s msgqueue.Index) bool { // make sure queue is empty for next test
+				return true
 			})
+			ctrl.logger.Debug("done by processed", zap.String("name", test.name))
 		})
 	}
 }

@@ -16,9 +16,14 @@ func (n *p2pNetwork) ReportValidation(msg *message.SSVMessage, res protocolp2p.M
 	if !n.isReady() {
 		return
 	}
-	peers := n.msgResolver.GetPeers(msg.GetData())
+	data, err := n.fork.EncodeNetworkMsg(msg)
+	if err != nil {
+		n.logger.Warn("could not encode message", zap.Error(err))
+		return
+	}
+	peers := n.msgResolver.GetPeers(data)
 	for _, pi := range peers {
-		err := n.idx.Score(pi, ssvpeers.NodeScore{Name: "validation", Value: msgValidationScore(res)})
+		err := n.idx.Score(pi, &ssvpeers.NodeScore{Name: "validation", Value: msgValidationScore(res)})
 		if err != nil {
 			n.logger.Warn("could not score peer", zap.String("peer", pi.String()), zap.Error(err))
 			continue

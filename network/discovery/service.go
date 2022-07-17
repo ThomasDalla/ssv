@@ -37,6 +37,7 @@ type Options struct {
 	Host        host.Host
 	DiscV5Opts  *DiscV5Options
 	ConnIndex   peers.ConnectionIndex
+	SubnetsIdx  peers.SubnetsIndex
 	HostAddress string
 	HostDNS     string
 
@@ -47,9 +48,10 @@ type Options struct {
 type Service interface {
 	discovery.Discovery
 	io.Closer
-	RegisterSubnets(subnets ...int64) error
-	DeregisterSubnets(subnets ...int64) error
+	RegisterSubnets(subnets ...int) error
+	DeregisterSubnets(subnets ...int) error
 	Bootstrap(handler HandleNewPeer) error
+	UpdateForkVersion(forkv forksprotocol.ForkVersion) error
 }
 
 // NewService creates new discovery.Service

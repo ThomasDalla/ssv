@@ -7,20 +7,20 @@ import (
 
 var (
 	// gsD topic stable mesh target count
-	gsD = 8
+	gsD = 6
 	// gsDlo topic stable mesh low watermark
-	gsDlo = 5
+	gsDlo = 3
 	// gsDhi topic stable mesh high watermark
-	gsDhi = 12
+	gsDhi = 9
 
 	// gsMaxIHaveLength is max number fo ihave messages to send
 	// lower the maximum (default is 5000) to avoid ihave floods
-	gsMaxIHaveLength = 2500
+	gsMaxIHaveLength = 1000
 
 	// gsMcacheLen number of windows to retain full messages in cache for `IWANT` responses
-	gsMcacheLen = 5
+	gsMcacheLen = 80
 	// gsMcacheGossip number of windows to gossip about
-	gsMcacheGossip = 3
+	gsMcacheGossip = 4
 
 	// heartbeat interval frequency of heartbeat, milliseconds
 	gsHeartbeatInterval = 700 * time.Millisecond
@@ -39,11 +39,3 @@ func gossipSubParam() pubsub.GossipSubParams {
 
 	return params
 }
-
-// TODO: check if needed
-// We have to unfortunately set this globally in order
-// to configure our message id time-cache rather than instantiating
-// it with a router instance.
-//func setGlobalPubSubParams() {
-//	pubsub.TimeCacheDuration = 550 * gsHeartbeatInterval
-//}

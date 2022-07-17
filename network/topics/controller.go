@@ -111,6 +111,7 @@ func (ctrl *topicsCtrl) Topics() []string {
 // it will create a single goroutine and channel for every topic
 func (ctrl *topicsCtrl) Subscribe(name string) error {
 	name = ctrl.fork.GetTopicFullName(name)
+	ctrl.logger.Debug("subscribing to topic", zap.String("topic", name))
 	tc, err := ctrl.joinTopic(name)
 	if err == nil && tc != nil {
 		tc.incSubCount()
@@ -130,7 +131,7 @@ func (ctrl *topicsCtrl) Broadcast(name string, data []byte, timeout time.Duratio
 	ctx, done := context.WithTimeout(ctrl.ctx, timeout)
 	defer done()
 
-	ctrl.logger.Debug("broadcasting message on topic", zap.String("topic", name))
+	//ctrl.logger.Debug("broadcasting message on topic", zap.String("topic", name))
 
 	err = tc.Publish(ctx, data)
 	if err == nil {
@@ -171,7 +172,7 @@ func (ctrl *topicsCtrl) Unsubscribe(name string, hard bool) error {
 			ctrl.logger.Warn("could not unregister msg validator", zap.String("topic", name), zap.Error(err))
 		}
 	}
-	ctrl.subFilter.Deregister(name)
+	//ctrl.subFilter.Deregister(name)
 	return nil
 }
 
@@ -203,11 +204,11 @@ func (ctrl *topicsCtrl) joinTopic(name string) (*topicContainer, error) {
 		tc = newTopicContainer()
 		ctrl.setTopicContainerUnsafe(name, tc)
 		// initial setup for the topic, should happen only once
-		ctrl.subFilter.Register(name)
+		//ctrl.subFilter.Register(name)
 		if err := ctrl.setupTopicValidator(name); err != nil {
 			// TODO: close topic?
 			//return err
-			ctrl.logger.Warn("failed to setup topic", zap.String("topic", name), zap.Error(err))
+			ctrl.logger.Warn("could not setup topic", zap.String("topic", name), zap.Error(err))
 		}
 	}
 	// lock topic and release main lock
@@ -236,8 +237,8 @@ func (ctrl *topicsCtrl) start(name string, tc *topicContainer) {
 	for {
 		err := ctrl.listen(tc.sub)
 		// rejoin in case failed for some reason
-		if err != nil {
-			ctrl.logger.Warn("failed listening to topic", zap.String("topic", name), zap.Error(err))
+		if err != nil && ctrl.ctx.Err() == nil {
+			ctrl.logger.Warn("could not listen to topic", zap.String("topic", name), zap.Error(err))
 			time.Sleep(time.Second)
 			err = ctrl.rejoinTopic(name)
 			if err == nil {
@@ -262,20 +263,18 @@ func (ctrl *topicsCtrl) listen(sub *pubsub.Subscription) error {
 			if ctx.Err() != nil {
 				logger.Debug("stop listening to topic: context is done")
 				return nil
-			} else if err.Error() == "subscription cancelled" {
-				logger.Debug("stop listening to topic: subscription cancelled")
+			} else if err == pubsub.ErrSubscriptionCancelled || err == pubsub.ErrTopicClosed {
+				logger.Debug("stop listening to topic", zap.Error(err))
 				return nil
 			}
 			logger.Warn("could not read message from subscription", zap.Error(err))
-			// TODO: handle instead of return?
-			return err
+			continue
 		}
 		if msg == nil || msg.Data == nil {
 			logger.Warn("got empty message from subscription")
 			continue
 		}
 		metricsPubsubInbound.WithLabelValues(ctrl.fork.GetTopicBaseName(topicName)).Inc()
-		//logger.Debug("got message from topic", zap.String("topic", topicName))
 		if err := ctrl.msgHandler(topicName, msg); err != nil {
 			logger.Debug("could not handle msg", zap.Error(err))
 		}
@@ -286,14 +285,15 @@ func (ctrl *topicsCtrl) listen(sub *pubsub.Subscription) error {
 // setupTopicValidator registers the topic validator
 func (ctrl *topicsCtrl) setupTopicValidator(name string) error {
 	if ctrl.msgValidatorFactory != nil {
-		ctrl.logger.Debug("setup topic validator", zap.String("topic", name))
 		// first try to unregister in case there is already a msg validator for that topic (e.g. fork scenario)
 		_ = ctrl.ps.UnregisterTopicValidator(name)
-		err := ctrl.ps.RegisterTopicValidator(name, ctrl.msgValidatorFactory(name),
-			pubsub.WithValidatorConcurrency(256)) // TODO: find the best value for concurrency
-		// TODO: check pubsub.WithValidatorInline() and pubsub.WithValidatorTimeout()
+		var opts []pubsub.ValidatorOpt
+		if ctrl.fork.GetTopicBaseName(name) == ctrl.fork.DecidedTopic() {
+			opts = append(opts, pubsub.WithValidatorTimeout(time.Second))
+		}
+		opts = append(opts, pubsub.WithValidatorConcurrency(32))
+		err := ctrl.ps.RegisterTopicValidator(name, ctrl.msgValidatorFactory(name), opts...)
 		if err != nil {
-			//ctrl.logger.Warn("could not register topic validator", zap.Error(err))
 			return errors.Wrap(err, "could not register topic validator")
 		}
 	}
@@ -307,7 +307,7 @@ func (ctrl *topicsCtrl) rejoinTopic(name string) error {
 		defer tc.locker.Unlock()
 		tc.sub.Cancel()
 		if err := tc.topic.Close(); err != nil {
-			ctrl.logger.Warn("failed to close topic", zap.String("topic", name), zap.Error(err))
+			ctrl.logger.Warn("could not close topic", zap.String("topic", name), zap.Error(err))
 		}
 		if err := ctrl.joinTopicUnsafe(tc, name); err != nil {
 			ctrl.logger.Warn("could not join topic", zap.String("topic", name), zap.Error(err))
