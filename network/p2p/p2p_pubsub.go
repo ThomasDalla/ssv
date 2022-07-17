@@ -200,9 +200,9 @@ func (n *p2pNetwork) handlePubsubMessages(topic string, msg *pubsub.Message) err
 	if ssvMsg == nil {
 		return nil
 	}
-	/*logger = withIncomingMsgFields(logger, msg, ssvMsg)
+	logger = withIncomingMsgFields(logger, msg, ssvMsg)
 	logger.Debug("incoming pubsub message", zap.String("topic", topic),
-		zap.String("msgType", ssvMsg.MsgType.String()))*/
+		zap.String("msgType", ssvMsg.MsgType.String()))
 	n.msgRouter.Route(*ssvMsg)
 	return nil
 }
