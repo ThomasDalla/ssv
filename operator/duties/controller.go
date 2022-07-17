@@ -61,6 +61,8 @@ type dutyController struct {
 
 	// chan
 	currentSlotC chan uint64
+
+	lastSlot types.Slot
 }
 
 var secPerSlot int64 = 12
@@ -130,6 +132,10 @@ func (dc *dutyController) ExecuteDuty(duty *beaconprotocol.Duty) error {
 // listenToTicker loop over the given slot channel
 func (dc *dutyController) listenToTicker(slots <-chan types.Slot) {
 	for currentSlot := range slots {
+		if currentSlot-dc.lastSlot > 1 {
+			dc.logger.Debug("slot debug log", zap.Uint64("last slot", uint64(dc.lastSlot)), zap.Uint64("current slot", uint64(currentSlot)))
+		}
+		dc.lastSlot = currentSlot
 		// notify current slot to channel
 		go dc.notifyCurrentSlot(currentSlot)
 
