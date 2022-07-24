@@ -114,6 +114,9 @@ func (pst *psTracer) log(evt *ps_pb.TraceEvent) {
 		if err == nil {
 			fields = append(fields, zap.String("receivedFromPeer", pid.String()))
 		}
+		if msg.Meta != nil {
+			fields = append(fields, zap.Int("msgs size", len(msg.Meta.Messages)))
+		}
 	}
 	pst.logger.Debug("pubsub event", fields...)
 }
