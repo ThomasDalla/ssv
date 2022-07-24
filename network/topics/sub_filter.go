@@ -45,7 +45,8 @@ func (sf *subFilter) CanSubscribe(topic string) bool {
 // It should filter only the subscriptions of interest and my return an error if (for instance)
 // there are too many subscriptions.
 func (sf *subFilter) FilterIncomingSubscriptions(pi peer.ID, subs []*ps_pb.RPC_SubOpts) ([]*ps_pb.RPC_SubOpts, error) {
-	if len(subs) > subscriptionRequestLimit {
+	sf.logger.Debug("filter incoming subscription", zap.Int("count", len(subs)))
+	if len(subs) > sf.subsLimit {
 		return nil, pubsub.ErrTooManySubscriptions
 	}
 
