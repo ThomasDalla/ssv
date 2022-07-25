@@ -27,9 +27,9 @@ type messageRouter struct {
 }
 
 func (r *messageRouter) Route(message message.SSVMessage) {
-	if !r.checkCache(&message) {
-		return
-	}
+	//if !r.checkCache(&message) {
+	//	return
+	//}
 	select {
 	case r.ch <- message:
 	default:
@@ -41,15 +41,15 @@ func (r *messageRouter) GetMessageChan() <-chan message.SSVMessage {
 	return r.ch
 }
 
-func (r *messageRouter) checkCache(msg *message.SSVMessage) bool {
-	data, err := msg.Encode()
-	if err != nil {
-		return false
-	}
-	mid := r.msgID(data)
-	if _, ok := r.cache.Get(mid); ok {
-		return false
-	}
-	r.cache.SetDefault(mid, true)
-	return true
-}
+//func (r *messageRouter) checkCache(msg *message.SSVMessage) bool {
+//	data, err := msg.Encode()
+//	if err != nil {
+//		return false
+//	}
+//	mid := r.msgID(data)
+//	if _, ok := r.cache.Get(mid); ok {
+//		return false
+//	}
+//	r.cache.SetDefault(mid, true)
+//	return true
+//}
