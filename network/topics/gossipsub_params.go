@@ -26,6 +26,8 @@ var (
 
 	// heartbeat interval frequency of heartbeat, milliseconds
 	gsHeartbeatInterval = 700 * time.Millisecond
+
+	gsFanoutTTL = 30 * time.Second
 )
 
 // creates a custom gossipsub parameter set.
@@ -39,6 +41,7 @@ func gossipSubParam() pubsub.GossipSubParams {
 	params.HistoryGossip = gsMcacheGossip
 	params.MaxIHaveLength = gsMaxIHaveLength
 	params.MaxIHaveMessages = gsMaxIHaveMessages
+	params.FanoutTTL = gsFanoutTTL
 
 	return params
 }
