@@ -10,7 +10,9 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"math"
 	"net"
+	"runtime"
 	"time"
 )
 
@@ -115,10 +117,12 @@ func NewPubsub(ctx context.Context, cfg *PububConfig, fork forks.Fork) (*pubsub.
 	}
 
 	sf := newSubFilter(cfg.Logger, fork, subscriptionRequestLimit)
+	validWorkers := int(math.Max(float64(runtime.NumCPU()), 4))
 	psOpts := []pubsub.Option{
 		pubsub.WithSeenMessagesTTL(cfg.MsgIDCacheTTL),
 		pubsub.WithPeerOutboundQueueSize(cfg.OutboundQueueSize),
 		pubsub.WithValidateQueueSize(cfg.ValidationQueueSize),
+		pubsub.WithValidateWorkers(validWorkers),
 		//pubsub.WithFloodPublish(true),
 		pubsub.WithValidateThrottle(cfg.ValidateThrottle),
 		pubsub.WithSubscriptionFilter(sf),
