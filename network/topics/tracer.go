@@ -116,8 +116,15 @@ func (pst *psTracer) log(evt *ps_pb.TraceEvent) {
 		}
 		if msg.Meta != nil && len(msg.Meta.Messages) > 0 {
 			fields = append(fields, zap.Int("msgs count", len(msg.Meta.Messages)))
-			fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.Meta.Messages[0].GetMessageID())))
-			fields = append(fields, zap.String("topic", msg.Meta.Messages[0].GetTopic()))
+
+			var ids []string
+			var topics []string
+			for _, m := range msg.Meta.Messages {
+				ids = append(ids, hex.EncodeToString(m.GetMessageID()))
+				topics = append(topics, m.GetTopic())
+			}
+			fields = append(fields, zap.Strings("msgIDs", ids))
+			fields = append(fields, zap.Strings("topics", topics))
 		}
 	}
 	pst.logger.Debug("pubsub event", fields...)
