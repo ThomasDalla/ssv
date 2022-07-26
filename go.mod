@@ -1,10 +1,11 @@
 module github.com/bloxapp/ssv
 
-go 1.15
+go 1.17
 
 require (
 	github.com/attestantio/go-eth2-client v0.11.3
 	github.com/bloxapp/eth2-key-manager v1.1.3-0.20211102055147-c66d220973fd
+	github.com/btcsuite/btcd/btcec/v2 v2.1.3
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/ethereum/go-ethereum v1.10.10
 	github.com/ferranbt/fastssz v0.0.0-20220103083642-bc5fefefa28b
@@ -12,21 +13,20 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/herumi/bls-eth-go-binary v0.0.0-20210917013441-d37c07cfda4e
 	github.com/ilyakaznacheev/cleanenv v1.2.5
 	github.com/ipfs/go-log v1.0.5
-	github.com/libp2p/go-libp2p v0.15.1
+	github.com/libp2p/go-libp2p v0.20.3
 	github.com/libp2p/go-libp2p-connmgr v0.2.4
-	github.com/libp2p/go-libp2p-core v0.9.0
-	github.com/libp2p/go-libp2p-discovery v0.5.1
+	github.com/libp2p/go-libp2p-core v0.17.0
+	github.com/libp2p/go-libp2p-discovery v0.6.0
 	github.com/libp2p/go-libp2p-kad-dht v0.15.0
-	github.com/libp2p/go-libp2p-noise v0.2.2
-	github.com/libp2p/go-libp2p-pubsub v0.5.6
-	github.com/libp2p/go-tcp-transport v0.2.8
-	github.com/multiformats/go-multiaddr v0.4.0
+	github.com/libp2p/go-libp2p-pubsub v0.7.1
+	github.com/libp2p/go-libp2p-resource-manager v0.3.0
+	github.com/multiformats/go-multiaddr v0.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
@@ -41,11 +41,16 @@ require (
 	github.com/wealdtech/go-eth2-util v1.6.3
 	go.opencensus.io v0.23.0
 	go.uber.org/atomic v1.9.0
-	go.uber.org/zap v1.19.0
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	go.uber.org/zap v1.19.1
 	google.golang.org/grpc v1.40.0
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect
+)
+
+require (
+	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
+	github.com/libp2p/go-tcp-transport v0.6.1 // indirect
+	github.com/multiformats/go-base32 v0.0.4 // indirect
+	lukechampine.com/blake3 v1.1.7 // indirect
 )
 
 replace github.com/prysmaticlabs/prysm => github.com/prysmaticlabs/prysm v1.4.2-0.20211101172615-63308239d94f
@@ -53,3 +58,5 @@ replace github.com/prysmaticlabs/prysm => github.com/prysmaticlabs/prysm v1.4.2-
 replace github.com/google/flatbuffers => github.com/google/flatbuffers v1.11.0
 
 replace github.com/dgraph-io/ristretto => github.com/dgraph-io/ristretto v0.1.1-0.20211108053508-297c39e6640f
+
+replace github.com/libp2p/go-libp2p-pubsub => github.com/bloxapp/libp2p_pubsub v0.7.5

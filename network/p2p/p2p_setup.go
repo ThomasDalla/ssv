@@ -13,6 +13,7 @@ import (
 	connmgr "github.com/libp2p/go-libp2p-connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	libp2pdisc "github.com/libp2p/go-libp2p-discovery"
+	rcmgr "github.com/libp2p/go-libp2p-resource-manager"
 	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/async"
@@ -104,8 +105,12 @@ func (n *p2pNetwork) SetupHost() error {
 	lowPeers, hiPeers := n.cfg.MaxPeers-3, n.cfg.MaxPeers-1
 	connManager := connmgr.NewConnManager(lowPeers, hiPeers, time.Minute*5)
 	opts = append(opts, libp2p.ConnectionManager(connManager))
-
-	host, err := libp2p.New(n.ctx, opts...)
+	rmgr, err := rcmgr.NewResourceManager(rcmgr.NewDefaultDynamicLimiter(0.2, 128<<20, 1<<29)) // 134-536MB
+	if err != nil {
+		return errors.Wrap(err, "could not create resource manager")
+	}
+	opts = append(opts, libp2p.ResourceManager(rmgr))
+	host, err := libp2p.New(opts...)
 	if err != nil {
 		return errors.Wrap(err, "could not create p2p host")
 	}
@@ -147,7 +152,10 @@ func (n *p2pNetwork) setupStreamCtrl() error {
 }
 
 func (n *p2pNetwork) setupPeerServices() error {
-	libPrivKey := crypto.PrivKey((*crypto.Secp256k1PrivateKey)(n.cfg.NetworkPrivateKey))
+	libPrivKey, err := commons.ConvertToInterfacePrivkey(n.cfg.NetworkPrivateKey)
+	if err != nil {
+		return err
+	}
 
 	self := records.NewNodeInfo(n.cfg.ForkVersion, n.cfg.NetworkID)
 	self.Metadata = &records.NodeMetadata{
@@ -180,6 +188,7 @@ func (n *p2pNetwork) setupPeerServices() error {
 		ConnIdx:         n.idx,
 		SubnetsIdx:      n.idx,
 		IDService:       ids,
+		Network:         n.host.Network(),
 		SubnetsProvider: subnetsProvider,
 	}, filters...)
 	n.host.SetStreamHandler(peers.NodeInfoProtocol, handshaker.Handler())
@@ -258,6 +267,7 @@ func (n *p2pNetwork) setupPubsub() error {
 		OutboundQueueSize:   n.cfg.PubsubOutQueueSize,
 		ValidationQueueSize: n.cfg.PubsubValidationQueueSize,
 		ValidateThrottle:    n.cfg.PubsubValidateThrottle,
+		MsgIDCacheTTL:       n.cfg.PubsubMsgCacheTTL,
 	}
 
 	if !n.cfg.PubSubScoring {
