@@ -108,6 +108,17 @@ func (pst *psTracer) log(evt *ps_pb.TraceEvent) {
 		if err == nil {
 			fields = append(fields, zap.String("targetPeer", pid.String()))
 		}
+	case ps_pb.TraceEvent_RECV_RPC, ps_pb.TraceEvent_RECV_INIT_RPC:
+		msg := evt.GetRecvRPC()
+		pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
+		if err == nil {
+			fields = append(fields, zap.String("ReceivedFromPeer", pid.String()))
+		}
+		if msg.Meta != nil && len(msg.Meta.Messages) > 0 {
+			fields = append(fields, zap.Int("msgs count", len(msg.Meta.Messages)))
+			fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.Meta.Messages[0].GetMessageID())))
+			fields = append(fields, zap.String("topic", msg.Meta.Messages[0].GetTopic()))
+		}
 	}
 	pst.logger.Debug("pubsub event", fields...)
 }
