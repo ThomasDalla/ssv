@@ -127,6 +127,7 @@ func (pst *psTracer) log(evt *ps_pb.TraceEvent) {
 			fields = append(fields, zap.Strings("msgIDs", ids))
 			fields = append(fields, zap.Strings("topics", topics))
 		}
+		pst.logger.Info("pubsub event", fields...)
 	}
-	pst.logger.Info("pubsub event", fields...)
+
 }
