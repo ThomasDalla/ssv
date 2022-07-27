@@ -147,8 +147,9 @@ func (ctrl *topicsCtrl) Broadcast(name string, data []byte, timeout time.Duratio
 	err = tc.Publish(ctx, data)
 	if err != nil {
 		ctrl.outCache.Delete(msgID)
+	} else {
+		metricsPubsubOutbound.WithLabelValues(ctrl.fork.GetTopicBaseName(tc.topic.String())).Inc()
 	}
-	metricsPubsubOutbound.WithLabelValues(ctrl.fork.GetTopicBaseName(tc.topic.String())).Inc()
 	return err
 }
 
