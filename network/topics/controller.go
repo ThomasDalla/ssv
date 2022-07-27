@@ -143,11 +143,12 @@ func (ctrl *topicsCtrl) Broadcast(name string, data []byte, timeout time.Duratio
 	if _, ok := ctrl.outCache.Get(msgID); ok {
 		return nil
 	}
+	ctrl.outCache.SetDefault(msgID, true)
 	err = tc.Publish(ctx, data)
-	if err == nil {
-		metricsPubsubOutbound.WithLabelValues(ctrl.fork.GetTopicBaseName(tc.topic.String())).Inc()
-		ctrl.outCache.SetDefault(msgID, true)
+	if err != nil {
+		ctrl.outCache.Delete(msgID)
 	}
+	metricsPubsubOutbound.WithLabelValues(ctrl.fork.GetTopicBaseName(tc.topic.String())).Inc()
 	return err
 }
 
