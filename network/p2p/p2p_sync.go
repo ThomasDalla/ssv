@@ -19,6 +19,7 @@ func (n *p2pNetwork) LastDecided(mid message.Identifier) ([]p2pprotocol.SyncResu
 		return nil, p2pprotocol.ErrNetworkIsNotReady
 	}
 	pid, peerCount := n.fork.ProtocolID(p2pprotocol.LastDecidedProtocol)
+	n.logger.Debug("PEER TEST - last decided get peers")
 	peers, err := n.getSubsetOfPeers(mid.GetValidatorPK(), peerCount, allPeersFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get subset of peers")
@@ -51,6 +52,7 @@ func (n *p2pNetwork) GetHistory(mid message.Identifier, from, to message.Height,
 	}
 	// if no peers were provided -> select a random set of peers
 	if len(peers) == 0 {
+		n.logger.Debug("PEER TEST - get history")
 		random, err := n.getSubsetOfPeers(mid.GetValidatorPK(), peerCount, n.peersWithProtocolsFilter(string(protocolID)))
 		if err != nil {
 			return nil, 0, errors.Wrap(err, "could not get subset of peers")
@@ -84,6 +86,7 @@ func (n *p2pNetwork) LastChangeRound(mid message.Identifier, height message.Heig
 		return nil, p2pprotocol.ErrNetworkIsNotReady
 	}
 	pid, peerCount := n.fork.ProtocolID(p2pprotocol.LastChangeRoundProtocol)
+	n.logger.Debug("PEER TEST - get last change round peers")
 	peers, err := n.getSubsetOfPeers(mid.GetValidatorPK(), peerCount, allPeersFilter)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get subset of peers")
@@ -170,6 +173,7 @@ func (n *p2pNetwork) getSubsetOfPeers(vpk message.ValidatorPK, peerCount int, fi
 	seen := make(map[peer.ID]struct{})
 	topics := n.fork.ValidatorTopicID(vpk)
 	for _, topic := range topics {
+		n.logger.Debug("PEER TEST - getSubsetOfPeers")
 		ps, err = n.topicsCtrl.Peers(topic)
 		if err != nil {
 			continue

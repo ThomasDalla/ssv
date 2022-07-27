@@ -71,6 +71,7 @@ func (n *p2pNetwork) reportTopics() {
 }
 
 func (n *p2pNetwork) reportTopicPeers(name string) {
+	n.logger.Debug("PEER TEST - report topic")
 	peers, err := n.topicsCtrl.Peers(name)
 	if err != nil {
 		n.logger.Warn("could not get topic peers", zap.String("topic", name), zap.Error(err))

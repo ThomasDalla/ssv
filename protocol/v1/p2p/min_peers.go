@@ -14,6 +14,7 @@ func WaitForMinPeers(pctx context.Context, logger *zap.Logger, subscriber Subscr
 
 	for ctx.Err() == nil {
 		time.Sleep(interval)
+		logger.Debug("PEER TEST - wait for peers")
 		peers, err := subscriber.Peers(vpk)
 		if err != nil {
 			logger.Warn("could not get peers of topic", zap.Error(err))
