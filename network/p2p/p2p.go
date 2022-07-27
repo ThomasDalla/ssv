@@ -130,7 +130,7 @@ func (n *p2pNetwork) Start() error {
 
 	async.Interval(n.ctx, reportingInterval, func() {
 		go n.reportAllPeers()
-		//n.reportTopics()
+		n.reportTopics()
 	})
 
 	if err := n.registerInitialTopics(); err != nil {
