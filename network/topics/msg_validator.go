@@ -30,11 +30,11 @@ func NewSSVMsgValidator(plogger *zap.Logger, fork forks.Fork, self peer.ID) func
 			reportValidationResult(validationResultSelf)
 			return pubsub.ValidationAccept
 		}
-		_, err := fork.DecodeNetworkMsg(pmsg.GetData())
-		if err != nil {
-			reportValidationResult(validationResultEncoding)
-			return pubsub.ValidationReject
-		}
+		//_, err := fork.DecodeNetworkMsg(pmsg.GetData())
+		//if err != nil {
+		//	reportValidationResult(validationResultEncoding)
+		//	return pubsub.ValidationReject
+		//}
 		// check decided topic
 		//currentTopic := pmsg.GetTopic()
 		//currentTopicBaseName := fork.GetTopicBaseName(currentTopic)
