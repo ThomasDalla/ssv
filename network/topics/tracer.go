@@ -54,62 +54,62 @@ func (pst *psTracer) log(evt *ps_pb.TraceEvent) {
 		zap.String("type", evt.GetType().String()),
 	}
 	switch evt.GetType() {
-	case ps_pb.TraceEvent_PUBLISH_MESSAGE:
-		msg := evt.GetPublishMessage()
-		fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
-		fields = append(fields, zap.String("topic", msg.GetTopic()))
-	case ps_pb.TraceEvent_REJECT_MESSAGE:
-		msg := evt.GetRejectMessage()
-		pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
-		if err == nil {
-			fields = append(fields, zap.String("targetPeer", pid.String()))
-		}
-		fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
-		fields = append(fields, zap.String("topic", msg.GetTopic()))
-		fields = append(fields, zap.String("reason", msg.GetReason()))
-	case ps_pb.TraceEvent_DUPLICATE_MESSAGE:
-		msg := evt.GetDuplicateMessage()
-		pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
-		if err == nil {
-			fields = append(fields, zap.String("targetPeer", pid.String()))
-		}
-		fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
-		fields = append(fields, zap.String("topic", msg.GetTopic()))
-	case ps_pb.TraceEvent_DELIVER_MESSAGE:
-		msg := evt.GetDeliverMessage()
-		pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
-		if err == nil {
-			fields = append(fields, zap.String("targetPeer", pid.String()))
-		}
-		fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
-		fields = append(fields, zap.String("topic", msg.GetTopic()))
-	case ps_pb.TraceEvent_ADD_PEER:
-		pid, err := peer.IDFromBytes(evt.GetAddPeer().GetPeerID())
-		if err == nil {
-			fields = append(fields, zap.String("targetPeer", pid.String()))
-		}
-	case ps_pb.TraceEvent_REMOVE_PEER:
-		pid, err := peer.IDFromBytes(evt.GetRemovePeer().GetPeerID())
-		if err == nil {
-			fields = append(fields, zap.String("targetPeer", pid.String()))
-		}
-	case ps_pb.TraceEvent_JOIN:
-		fields = append(fields, zap.String("topic", evt.GetJoin().GetTopic()))
-	case ps_pb.TraceEvent_LEAVE:
-		fields = append(fields, zap.String("topic", evt.GetLeave().GetTopic()))
-	case ps_pb.TraceEvent_SEND_RPC:
-		msg := evt.GetSendRPC()
-		pid, err := peer.IDFromBytes(msg.GetSendTo())
-		if err == nil {
-			fields = append(fields, zap.String("targetPeer", pid.String()))
-		}
-	case ps_pb.TraceEvent_DROP_RPC:
-		msg := evt.GetDropRPC()
-		pid, err := peer.IDFromBytes(msg.GetSendTo())
-		if err == nil {
-			fields = append(fields, zap.String("targetPeer", pid.String()))
-		}
-	case ps_pb.TraceEvent_RECV_RPC, ps_pb.TraceEvent_RECV_INIT_RPC:
+	//case ps_pb.TraceEvent_PUBLISH_MESSAGE:
+	//	msg := evt.GetPublishMessage()
+	//	fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
+	//	fields = append(fields, zap.String("topic", msg.GetTopic()))
+	//case ps_pb.TraceEvent_REJECT_MESSAGE:
+	//	msg := evt.GetRejectMessage()
+	//	pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
+	//	if err == nil {
+	//		fields = append(fields, zap.String("targetPeer", pid.String()))
+	//	}
+	//	fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
+	//	fields = append(fields, zap.String("topic", msg.GetTopic()))
+	//	fields = append(fields, zap.String("reason", msg.GetReason()))
+	//case ps_pb.TraceEvent_DUPLICATE_MESSAGE:
+	//	msg := evt.GetDuplicateMessage()
+	//	pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
+	//	if err == nil {
+	//		fields = append(fields, zap.String("targetPeer", pid.String()))
+	//	}
+	//	fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
+	//	fields = append(fields, zap.String("topic", msg.GetTopic()))
+	//case ps_pb.TraceEvent_DELIVER_MESSAGE:
+	//	msg := evt.GetDeliverMessage()
+	//	pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
+	//	if err == nil {
+	//		fields = append(fields, zap.String("targetPeer", pid.String()))
+	//	}
+	//	fields = append(fields, zap.String("msgID", hex.EncodeToString(msg.GetMessageID())))
+	//	fields = append(fields, zap.String("topic", msg.GetTopic()))
+	//case ps_pb.TraceEvent_ADD_PEER:
+	//	pid, err := peer.IDFromBytes(evt.GetAddPeer().GetPeerID())
+	//	if err == nil {
+	//		fields = append(fields, zap.String("targetPeer", pid.String()))
+	//	}
+	//case ps_pb.TraceEvent_REMOVE_PEER:
+	//	pid, err := peer.IDFromBytes(evt.GetRemovePeer().GetPeerID())
+	//	if err == nil {
+	//		fields = append(fields, zap.String("targetPeer", pid.String()))
+	//	}
+	//case ps_pb.TraceEvent_JOIN:
+	//	fields = append(fields, zap.String("topic", evt.GetJoin().GetTopic()))
+	//case ps_pb.TraceEvent_LEAVE:
+	//	fields = append(fields, zap.String("topic", evt.GetLeave().GetTopic()))
+	//case ps_pb.TraceEvent_SEND_RPC:
+	//	msg := evt.GetSendRPC()
+	//	pid, err := peer.IDFromBytes(msg.GetSendTo())
+	//	if err == nil {
+	//		fields = append(fields, zap.String("targetPeer", pid.String()))
+	//	}
+	//case ps_pb.TraceEvent_DROP_RPC:
+	//	msg := evt.GetDropRPC()
+	//	pid, err := peer.IDFromBytes(msg.GetSendTo())
+	//	if err == nil {
+	//		fields = append(fields, zap.String("targetPeer", pid.String()))
+	//	}
+	case /*ps_pb.TraceEvent_RECV_RPC,*/ ps_pb.TraceEvent_RECV_INIT_RPC:
 		msg := evt.GetRecvRPC()
 		pid, err := peer.IDFromBytes(msg.GetReceivedFrom())
 		if err == nil {
