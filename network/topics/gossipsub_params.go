@@ -7,11 +7,11 @@ import (
 
 var (
 	// gsD topic stable mesh target count
-	gsD = 5
+	gsD = 3
 	// gsDlo topic stable mesh low watermark
 	gsDlo = 2
 	// gsDhi topic stable mesh high watermark
-	gsDhi = 8
+	gsDhi = 6
 
 	// gsMaxIHaveLength is max number for ihave messages to send
 	// decreased the default (5000) to avoid ihave floods
@@ -34,6 +34,9 @@ func gossipSubParam() pubsub.GossipSubParams {
 	params.Dlo = gsDlo
 	params.Dhi = gsDhi
 	params.D = gsD
+	params.GossipRetransmission = 1
+	params.Dout = 1
+	params.Dlazy = 2
 	params.HeartbeatInterval = gsHeartbeatInterval
 	params.HistoryLength = gsMcacheLen
 	params.HistoryGossip = gsMcacheGossip
