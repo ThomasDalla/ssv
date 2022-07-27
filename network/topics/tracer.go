@@ -128,5 +128,5 @@ func (pst *psTracer) log(evt *ps_pb.TraceEvent) {
 			fields = append(fields, zap.Strings("topics", topics))
 		}
 	}
-	pst.logger.Debug("pubsub event", fields...)
+	pst.logger.Info("pubsub event", fields...)
 }
