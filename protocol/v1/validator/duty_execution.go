@@ -55,6 +55,7 @@ func (v *Validator) comeToConsensusOnInputValue(logger *zap.Logger, duty *specty
 		RequireMinPeers: true,
 	})
 	if err != nil {
+		logger.Debug("could not start new iBFT instance", zap.Error(err))
 		return nil, 0, nil, 0, errors.Wrap(err, "could not start ibft instance")
 	}
 	if result == nil {
