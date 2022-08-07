@@ -275,8 +275,11 @@ func (c *Controller) StartInstance(opts instance.ControllerStartInstanceOptions)
 	}
 
 	if err := c.canStartNewInstance(*instanceOpts); err != nil {
+		c.Logger.Warn("can't start new iBFT instance", zap.Error(err))
 		return nil, errors.WithMessage(err, "can't start new iBFT instance")
 	}
+
+	c.Logger.Warn("starting new iBFT instance")
 
 	done := reportIBFTInstanceStart(c.ValidatorShare.PublicKey.SerializeToHexStr())
 
