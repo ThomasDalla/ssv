@@ -7,6 +7,7 @@ import (
 	forksv1 "github.com/bloxapp/ssv/network/forks/v1"
 	"github.com/bloxapp/ssv/protocol/v1/message"
 	p2pprotocol "github.com/bloxapp/ssv/protocol/v1/p2p"
+	scrypto "github.com/bloxapp/ssv/utils/crypto"
 	"github.com/libp2p/go-libp2p-core/peer"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/pkg/errors"
@@ -66,7 +67,8 @@ func (n *p2pNetwork) Broadcast(msg message.SSVMessage) error {
 		if topic == forksv1.UnknownSubnet {
 			return errors.New("unknown topic")
 		}
-		logger.Debug("trying to broadcast message", zap.String("topic", topic), zap.Any("msg", msg))
+		h := scrypto.Sha256Hash(raw)
+		logger.Error("trying to broadcast message", zap.String("topic", topic), zap.Any("msg", msg), zap.String("msgId", hex.EncodeToString(h[20:])))
 		if err := n.topicsCtrl.Broadcast(topic, raw, n.cfg.RequestTimeout); err != nil {
 			return errors.Wrap(err, "could not broadcast msg")
 		}
