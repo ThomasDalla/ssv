@@ -106,11 +106,11 @@ spec:
               key: abi_version
               optional: true
         - name: LOG_LEVEL
-          value: "debug"
+          value: "error"
         - name: DB_REPORTING
           value: "false"
         - name: PUBSUB_TRACE
-          value: "false"
+          value: "true"
         - name: P2P_LOG
           value: "false"
         - name: DISCOVERY_TYPE_KEY

@@ -43,5 +43,5 @@ func (i *Instance) ResetRoundTimer() {
 	// stat new timer
 	roundTimeout := i.roundTimeoutSeconds()
 	i.roundTimer.Reset(roundTimeout)
-	i.Logger.Info("started timeout clock", zap.Float64("seconds", roundTimeout.Seconds()), zap.Uint64("round", uint64(i.State().GetRound())))
+	i.Logger.Error("started timeout clock", zap.Float64("seconds", roundTimeout.Seconds()), zap.Uint64("round", uint64(i.State().GetRound())))
 }

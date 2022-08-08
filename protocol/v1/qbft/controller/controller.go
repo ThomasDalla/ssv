@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"encoding/hex"
+	scrypto "github.com/bloxapp/ssv/utils/crypto"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -314,11 +316,16 @@ func (c *Controller) ProcessMsg(msg *message.SSVMessage) error {
 			fields = append(fields, zap.String("stage", qbft.RoundStateName[currentState.Stage.Load()]), zap.Uint32("height", uint32(currentState.GetHeight())), zap.Uint32("round", uint32(currentState.GetRound())))
 		}
 	}
+
+	encodedMsg, _ := msg.Encode()
+	h := scrypto.Sha256Hash(encodedMsg)
+
 	fields = append(fields,
 		zap.Int("queue_len", c.q.Len()),
+		zap.String("msgId", hex.EncodeToString(h[20:])),
 		zap.String("msgType", msg.MsgType.String()),
 	)
-	c.logger.Debug("got message, add to queue", fields...)
+	c.logger.Error("got message, add to queue", fields...)
 	c.q.Add(msg)
 	return nil
 }

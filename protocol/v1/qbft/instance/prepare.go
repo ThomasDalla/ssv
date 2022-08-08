@@ -18,7 +18,7 @@ func (i *Instance) PrepareMsgPipeline() pipelines.SignedMessagePipeline {
 	return pipelines.Combine(
 		i.fork.PrepareMsgValidationPipeline(i.ValidatorShare, i.State()),
 		pipelines.WrapFunc("add prepare msg", func(signedMessage *message.SignedMessage) error {
-			i.Logger.Info("received valid prepare message from round",
+			i.Logger.Error("received valid prepare message from round",
 				zap.Any("sender_ibft_id", signedMessage.GetSigners()),
 				zap.Uint64("round", uint64(signedMessage.Message.Round)))
 

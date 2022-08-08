@@ -17,7 +17,7 @@ func (i *Instance) CommitMsgPipeline() pipelines.SignedMessagePipeline {
 	return pipelines.Combine(
 		i.CommitMsgValidationPipeline(),
 		pipelines.WrapFunc("add commit msg", func(signedMessage *message.SignedMessage) error {
-			i.Logger.Info("received valid commit message for round",
+			i.Logger.Error("received valid commit message for round",
 				zap.Any("sender_ibft_id", signedMessage.GetSigners()),
 				zap.Uint64("round", uint64(signedMessage.Message.Round)))
 
