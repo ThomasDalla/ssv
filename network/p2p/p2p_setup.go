@@ -256,7 +256,7 @@ func (n *p2pNetwork) setupDiscovery() error {
 
 func (n *p2pNetwork) setupPubsub() error {
 	if n.cfg.PubSubTrace {
-		if err := logging.SetLogLevel("pubsub", zapcore.DebugLevel.String()); err != nil {
+		if err := logging.SetLogLevel("pubsub", zapcore.ErrorLevel.String()); err != nil {
 			return errors.Wrap(err, "could not set pubsub logger level")
 		}
 	}
