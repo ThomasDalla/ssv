@@ -109,5 +109,5 @@ func (pst *psTracer) log(evt *ps_pb.TraceEvent) {
 			fields = append(fields, zap.String("targetPeer", pid.String()))
 		}
 	}
-	pst.logger.Error("pubsub event", fields...)
+	pst.logger.Debug("pubsub event", fields...)
 }
