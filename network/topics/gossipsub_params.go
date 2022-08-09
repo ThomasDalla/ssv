@@ -15,7 +15,7 @@ var (
 
 	// gsMaxIHaveLength is max number for ihave messages to send
 	// decreased the default (5000) to avoid ihave floods
-	gsMaxIHaveLength = 1500
+	gsMaxIHaveLength = 5000
 	// gsMaxIHaveMessages is the max number for ihave message to accept from a peer within a heartbeat
 	// increased default (10) to avoid multiple ihave messages
 	gsMaxIHaveMessages = 32
