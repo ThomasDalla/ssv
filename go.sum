@@ -154,6 +154,8 @@ github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809143841-b132c3cc939f h1:
 github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809143841-b132c3cc939f/go.mod h1:n6HOgvTKe1cqSEU/5klarM6SxS5lhYGiasiI6cZu05w=
 github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809152243-8d72af6a9606 h1:sGUxfSD3xCZAby9gc71e+POL5+lCBvFvbArkcF2eSkk=
 github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809152243-8d72af6a9606/go.mod h1:n6HOgvTKe1cqSEU/5klarM6SxS5lhYGiasiI6cZu05w=
+github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809161623-eb2374d08f7b h1:TkvK7cWSgnD2/BjlsDkbIDxpW9OaeWg+QFGeyt5FR5w=
+github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809161623-eb2374d08f7b/go.mod h1:n6HOgvTKe1cqSEU/5klarM6SxS5lhYGiasiI6cZu05w=
 github.com/bloxapp/ssv v0.2.0/go.mod h1:pykRuj7jWKky7IBHfIb3CaKDGaKvqADpoYwDX+8xz3c=
 github.com/bmizerany/pat v0.0.0-20170815010413-6226ea591a40/go.mod h1:8rLXio+WjiTceGBHIoTvn60HIbs7Hm7bcHjyrSqYB9c=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
