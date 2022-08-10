@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	spectypes "github.com/bloxapp/ssv-spec/types"
+	scrypto "github.com/bloxapp/ssv/utils/crypto"
 
 	specqbft "github.com/bloxapp/ssv-spec/qbft"
 	"github.com/libp2p/go-libp2p-core/peer"
@@ -70,7 +71,8 @@ func (n *p2pNetwork) Broadcast(msg spectypes.SSVMessage) error {
 		if topic == genesisFork.UnknownSubnet {
 			return errors.New("unknown topic")
 		}
-		logger.Error("trying to broadcast message", zap.String("topic", topic), zap.Any("msg", msg))
+		h := scrypto.Sha256Hash(raw)
+		logger.Error("trying to broadcast message", zap.String("topic", topic), zap.String("msgId", hex.EncodeToString(h[20:])))
 		if err := n.topicsCtrl.Broadcast(topic, raw, n.cfg.RequestTimeout); err != nil {
 			return errors.Wrap(err, "could not broadcast msg")
 		}

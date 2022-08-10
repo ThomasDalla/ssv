@@ -148,6 +148,7 @@ func (n *p2pNetwork) peersBalancing() {
 	allPeers := n.host.Network().Peers()
 	currentCount := len(allPeers)
 	if currentCount < n.cfg.MaxPeers {
+		_ = n.idx.GetSubnetsStats()
 		return
 	}
 	ctx, cancel := context.WithTimeout(n.ctx, connManagerGCTimeout)
