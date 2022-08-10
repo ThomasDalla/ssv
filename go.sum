@@ -145,6 +145,8 @@ github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809161623-eb2374d08f7b h1:
 github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809161623-eb2374d08f7b/go.mod h1:n6HOgvTKe1cqSEU/5klarM6SxS5lhYGiasiI6cZu05w=
 github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220810133119-b21e12e7a1c7 h1:0qbRT3TnCQmBwyOtpaB+zQy88IFePIhi9RFA5jxRpFM=
 github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220810133119-b21e12e7a1c7/go.mod h1:n6HOgvTKe1cqSEU/5klarM6SxS5lhYGiasiI6cZu05w=
+github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220810135359-768cebae58f0 h1:rTWSFDCGsYIvUX4k8cAtCI0upDgAB43NcN2WaZ4VpXU=
+github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220810135359-768cebae58f0/go.mod h1:n6HOgvTKe1cqSEU/5klarM6SxS5lhYGiasiI6cZu05w=
 github.com/bloxapp/ssv v0.2.0/go.mod h1:pykRuj7jWKky7IBHfIb3CaKDGaKvqADpoYwDX+8xz3c=
 github.com/bloxapp/ssv-spec v0.1.2-0.20220719134225-f49e942ed4ee h1:fgBbcoDojF7o9SLxtdHW04e8z7wiZv2XEUnHN6ANA7s=
 github.com/bloxapp/ssv-spec v0.1.2-0.20220719134225-f49e942ed4ee/go.mod h1:x8OOkoSaJTxbHoeQhHjTSZX/1TyUvCbEj+QYjf+KF7k=
