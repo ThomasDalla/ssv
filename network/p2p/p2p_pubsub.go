@@ -70,7 +70,7 @@ func (n *p2pNetwork) Broadcast(msg spectypes.SSVMessage) error {
 		if topic == genesisFork.UnknownSubnet {
 			return errors.New("unknown topic")
 		}
-		logger.Debug("trying to broadcast message", zap.String("topic", topic), zap.Any("msg", msg))
+		logger.Error("trying to broadcast message", zap.String("topic", topic), zap.Any("msg", msg))
 		if err := n.topicsCtrl.Broadcast(topic, raw, n.cfg.RequestTimeout); err != nil {
 			return errors.Wrap(err, "could not broadcast msg")
 		}

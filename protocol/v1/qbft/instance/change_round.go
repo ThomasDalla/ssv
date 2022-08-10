@@ -23,7 +23,7 @@ func (i *Instance) ChangeRoundMsgPipeline() pipelines.SignedMessagePipeline {
 	return pipelines.Combine(
 		i.ChangeRoundMsgValidationPipeline(),
 		pipelines.WrapFunc("add change round msg", func(signedMessage *specqbft.SignedMessage) error {
-			i.Logger.Info("received valid change round message for round",
+			i.Logger.Error("received valid change round message for round",
 				zap.Any("sender_ibft_id", signedMessage.GetSigners()),
 				zap.Any("msg", signedMessage.Message),
 				zap.Uint64("round", uint64(signedMessage.Message.Round)))
@@ -88,7 +88,7 @@ func (i *Instance) uponChangeRoundFullQuorum() pipelines.SignedMessagePipeline {
 				zap.Bool("is_leader", i.IsLeader()),
 				zap.Uint64("leader", i.ThisRoundLeader()),
 				zap.Bool("round_justified", true))
-			logger.Info("change round quorum received")
+			logger.Error("change round quorum received")
 
 			if !i.IsLeader() {
 				err = i.actOnExistingPrePrepare(signedMessage)
@@ -104,10 +104,10 @@ func (i *Instance) uponChangeRoundFullQuorum() pipelines.SignedMessagePipeline {
 			var value []byte
 			if notPrepared {
 				value = i.State().GetInputValue()
-				logger.Info("broadcasting pre-prepare as leader after round change with input value", zap.String("value", fmt.Sprintf("%x", value)))
+				logger.Error("broadcasting pre-prepare as leader after round change with input value", zap.String("value", fmt.Sprintf("%x", value)))
 			} else {
 				value = highest.PreparedValue
-				logger.Info("broadcasting pre-prepare as leader after round change with justified prepare value", zap.String("value", fmt.Sprintf("%x", value)))
+				logger.Error("broadcasting pre-prepare as leader after round change with justified prepare value", zap.String("value", fmt.Sprintf("%x", value)))
 			}
 
 			// send pre-prepare msg
@@ -133,7 +133,7 @@ func (i *Instance) actOnExistingPrePrepare(signedMessage *specqbft.SignedMessage
 		return err
 	}
 	if !found {
-		i.Logger.Debug("not found exist pre-prepare for change round")
+		i.Logger.Error("not found exist pre-prepare for change round")
 		return nil
 	}
 	return i.UponPrePrepareMsg().Run(msg)

@@ -74,7 +74,7 @@ func (c *Controller) broadcastSignature() error {
 	if err := c.reconstructAndBroadcastSignature(c.SignatureState.signatures, c.SignatureState.root, c.SignatureState.valueStruct, c.SignatureState.duty); err != nil {
 		return errors.Wrap(err, "failed to reconstruct and broadcast signature")
 	}
-	c.Logger.Info("Successfully submitted role!")
+	c.Logger.Error("Successfully submitted role!")
 	return nil
 }
 

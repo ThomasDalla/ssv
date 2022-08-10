@@ -192,7 +192,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	lukechampine.com/blake3 v1.1.6 // indirect
-	olympos.io/encoding/edn v0.0.0-20200308123125-93e3b8dd0e24 // indirect
 )
 
 replace github.com/prysmaticlabs/prysm => github.com/prysmaticlabs/prysm v1.4.2-0.20211101172615-63308239d94f
@@ -200,3 +199,5 @@ replace github.com/prysmaticlabs/prysm => github.com/prysmaticlabs/prysm v1.4.2-
 replace github.com/google/flatbuffers => github.com/google/flatbuffers v1.11.0
 
 replace github.com/dgraph-io/ristretto => github.com/dgraph-io/ristretto v0.1.1-0.20211108053508-297c39e6640f
+
+replace github.com/libp2p/go-libp2p-pubsub => github.com/bloxapp/libp2p_pubsub v0.7.1-blox.8.0.20220809161623-eb2374d08f7b

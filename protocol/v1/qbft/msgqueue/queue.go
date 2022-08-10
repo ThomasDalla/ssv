@@ -117,7 +117,7 @@ func (q *queue) Add(msg *spectypes.SSVMessage) {
 		q.items[idx] = msgs
 		metricsMsgQRatio.WithLabelValues(idx.ID, idx.Name, message.MsgTypeToString(idx.Mt), strconv.Itoa(int(idx.Cmt))).Inc()
 	}
-	q.logger.Debug("message added to queue", zap.Any("indices", indices))
+	q.logger.Error("message added to queue", zap.Any("indices", indices))
 }
 
 func (q *queue) Purge(idx Index) int64 {

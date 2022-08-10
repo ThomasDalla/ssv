@@ -18,7 +18,7 @@ func (i *Instance) PrePrepareMsgPipeline() pipelines.SignedMessagePipeline {
 	return pipelines.Combine(
 		i.prePrepareMsgValidationPipeline(),
 		pipelines.WrapFunc("add pre-prepare msg", func(signedMessage *specqbft.SignedMessage) error {
-			i.Logger.Info("received valid pre-prepare message for round",
+			i.Logger.Error("received valid pre-prepare message for round",
 				zap.Any("sender_ibft_id", signedMessage.GetSigners()),
 				zap.Uint64("round", uint64(signedMessage.Message.Round)))
 

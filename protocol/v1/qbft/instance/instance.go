@@ -329,7 +329,7 @@ func (i *Instance) GetStageChan() chan qbft.RoundState {
 
 // SignAndBroadcast checks and adds the signed message to the appropriate round state type
 func (i *Instance) SignAndBroadcast(msg *specqbft.Message) error {
-	i.Logger.Debug("broadcasting consensus msg",
+	i.Logger.Error("broadcasting consensus msg",
 		zap.Int("type", int(msg.MsgType)),
 		zap.Int64("height", int64(msg.Height)),
 		zap.Int64("round", int64(msg.Round)),

@@ -87,7 +87,7 @@ func (t *RoundTimer) Reset(d time.Duration) {
 			return
 		case <-t.timer.C:
 			if atomic.CompareAndSwapUint32(&t.state, stateRunning, stateStopped) {
-				t.logger.Debug("round timer was timed-out")
+				t.logger.Error("round timer was timed-out")
 				t.result <- true
 			}
 		}

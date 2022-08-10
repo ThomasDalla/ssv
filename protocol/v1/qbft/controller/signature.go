@@ -179,7 +179,7 @@ func (c *Controller) reconstructAndBroadcastSignature(signatures map[spectypes.O
 		return errors.New("could not reconstruct a valid signature")
 	}
 
-	c.Logger.Info("signatures successfully reconstructed", zap.String("signature", base64.StdEncoding.EncodeToString(signature.Serialize())), zap.Int("signature count", len(signatures)))
+	c.Logger.Error("signatures successfully reconstructed", zap.String("signature", base64.StdEncoding.EncodeToString(signature.Serialize())), zap.Int("signature count", len(signatures)))
 
 	// Submit validation to beacon node
 	switch duty.Type {
