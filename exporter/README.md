@@ -58,7 +58,7 @@ The following information will be stored and served by exporter:
     "message": {
       "type": 3,
       "round": 1,
-      "lambda": "...",
+      "identifier": "...",
       "seq_number": 23,
       "value": "..."
     },
